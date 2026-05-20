@@ -1,0 +1,54 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+  invoices      Invoice[]
+}
+
+model Subscription {
+  id              String    @id
+  userId          String
+  userEmail       String
+  plan            String
+  status          String
+  amount          Float
+  interval        String
+  trialDaysLeft   Int?
+  createdAt       DateTime  @default(now())
+  nextBillingDate DateTime
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+}
+
+model Invoice {
+  id             String       @id
+  subscriptionId String
+  userId         String
+  userEmail      String
+  plan           String
+  amount         Float
+  status         String
+  createdAt      DateTime     @default(now())
+  
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}

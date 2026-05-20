@@ -1,0 +1,38 @@
+{
+  "users": [
+    {
+      "id": "usr_81923",
+      "name": "Sarah Jenkins",
+      "email": "sarah@saasflow.com",
+      "password": "$2a$10$U.V1Z4j73j5N.qQ1S.t6A.d08B5o2C0t1y0eU8z8K1L4U4d4e4F4G",
+      "role": "ADMIN",
+      "createdAt": "2026-05-20T13:52:12.893Z"
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "sub_b8d38e21",
+      "userId": "usr_81923",
+      "userEmail": "sarah@saasflow.com",
+      "plan": "Pro",
+      "status": "Active",
+      "amount": 49,
+      "interval": "monthly",
+      "trialDaysLeft": null,
+      "createdAt": "2026-05-20T13:52:12.893Z",
+      "nextBillingDate": "2026-06-19T13:52:12.893Z"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv_b8d38e21",
+      "subscriptionId": "sub_b8d38e21",
+      "userId": "usr_81923",
+      "userEmail": "sarah@saasflow.com",
+      "plan": "Pro",
+      "amount": 49,
+      "status": "Paid",
+      "createdAt": "2026-05-20T13:52:12.893Z"
+    }
+  ]
+}
