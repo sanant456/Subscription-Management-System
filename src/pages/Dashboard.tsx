@@ -72,6 +72,12 @@ export const Dashboard: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (user && user.role !== 'ADMIN') {
+      setNewEmail(user.email);
+    }
+  }, [user]);
+
   // Form State
   const [newEmail, setNewEmail] = useState('');
   const [newPlan, setNewPlan] = useState<PlanType>('Pro');
@@ -95,7 +101,7 @@ export const Dashboard: React.FC = () => {
     }
     
     createSubscription(newEmail, newPlan, newInterval);
-    setNewEmail('');
+    setNewEmail(user?.role === 'ADMIN' ? '' : user?.email || '');
     addLog('Subscription Service', `Created new subscription from Dashboard Form: ${newEmail}`, 'success');
   };
 
@@ -351,36 +357,47 @@ export const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   <Card className="hover:border-purple-500/20 bg-black/20">
                     <CardHeader className="pb-2">
-                      <CardDescription className="uppercase tracking-wider font-semibold text-[10px]">Monthly Revenue</CardDescription>
+                      <CardDescription className="uppercase tracking-wider font-semibold text-[10px]">
+                        {user?.role === 'ADMIN' ? 'Monthly Revenue' : 'Monthly Cost'}
+                      </CardDescription>
                       <CardTitle className="text-3xl font-extrabold text-white light-theme:text-gray-900 mt-1">₹{metrics.mrr.toLocaleString()}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-                        ▲ 12.8% <span className="text-gray-500">from last week</span>
+                        {user?.role === 'ADMIN' ? '▲ 12.8%' : '▲ active spend'}{' '}
+                        <span className="text-gray-500">{user?.role === 'ADMIN' ? 'from last week' : 'normalized monthly'}</span>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card className="hover:border-purple-500/20 bg-black/20">
                     <CardHeader className="pb-2">
-                      <CardDescription className="uppercase tracking-wider font-semibold text-[10px]">Active Subscribers</CardDescription>
+                      <CardDescription className="uppercase tracking-wider font-semibold text-[10px]">
+                        {user?.role === 'ADMIN' ? 'Active Subscribers' : 'Active Services'}
+                      </CardDescription>
                       <CardTitle className="text-3xl font-extrabold text-white light-theme:text-gray-900 mt-1">{metrics.activeUsers}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-                        ▲ {subscriptions.filter(s => s.status === 'Active').length} active tiers
+                        ▲ {subscriptions.filter(s => s.status === 'Active').length}{' '}
+                        <span className="text-gray-500">{user?.role === 'ADMIN' ? 'active tiers' : 'active plans'}</span>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card className="hover:border-purple-500/20 bg-black/20">
                     <CardHeader className="pb-2">
-                      <CardDescription className="uppercase tracking-wider font-semibold text-[10px]">Churn Rate</CardDescription>
+                      <CardDescription className="uppercase tracking-wider font-semibold text-[10px]">
+                        {user?.role === 'ADMIN' ? 'Churn Rate' : 'Cancellation Rate'}
+                      </CardDescription>
                       <CardTitle className="text-3xl font-extrabold text-white light-theme:text-gray-900 mt-1">{metrics.churnRate}%</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-                        ▼ 0.2% <span className="text-gray-500">target &lt; 3.0%</span>
+                        ▼ 0.2%{' '}
+                        <span className="text-gray-500">
+                          {user?.role === 'ADMIN' ? 'target < 3.0%' : 'deactivated services'}
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
@@ -392,7 +409,8 @@ export const Dashboard: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-                        ▲ {invoices.filter(i => i.status === 'Paid').length} paid invoices
+                        ▲ {invoices.filter(i => i.status === 'Paid').length}{' '}
+                        <span className="text-gray-500">{user?.role === 'ADMIN' ? 'paid invoices' : 'successful receipts'}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -402,8 +420,12 @@ export const Dashboard: React.FC = () => {
                 <Card className="p-6 bg-black/30 border-white/5">
                   <CardHeader className="p-0 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <CardTitle className="text-lg">Monthly Recurring Revenue Growth</CardTitle>
-                      <CardDescription className="text-xs">Visualizing historical performance curves of sub database</CardDescription>
+                      <CardTitle className="text-lg">
+                        {user?.role === 'ADMIN' ? 'Monthly Recurring Revenue Growth' : 'Monthly Subscription Spending Growth'}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {user?.role === 'ADMIN' ? 'Visualizing historical performance curves of sub database' : 'Visualizing historical subscription costs normalized monthly'}
+                      </CardDescription>
                     </div>
                   </CardHeader>
                   <div className="h-[280px]">
@@ -430,8 +452,12 @@ export const Dashboard: React.FC = () => {
                   {/* Subscription creation */}
                   <Card className="bg-black/20 border-white/5">
                     <CardHeader>
-                      <CardTitle className="text-base">Quick Subscription Creation</CardTitle>
-                      <CardDescription className="text-xs">Inject new client accounts directly into DB repository</CardDescription>
+                      <CardTitle className="text-base">
+                        {user?.role === 'ADMIN' ? 'Quick Subscription Creation' : 'Purchase New Subscription'}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {user?.role === 'ADMIN' ? 'Inject new client accounts directly into DB repository' : 'Subscribe to a new service plan instantly'}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleCreateSub} className="space-y-4">
@@ -442,7 +468,8 @@ export const Dashboard: React.FC = () => {
                             placeholder="e.g. client@company.com"
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
-                            className="px-4 py-2.5 rounded-xl border border-white/10 bg-black/40 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                            disabled={user?.role !== 'ADMIN'}
+                            className="px-4 py-2.5 rounded-xl border border-white/10 bg-black/40 text-xs text-white focus:outline-none focus:border-purple-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
                           />
                         </div>
 
@@ -480,7 +507,7 @@ export const Dashboard: React.FC = () => {
                         )}
 
                         <Button type="submit" variant="primary" className="w-full" leftIcon={<Plus className="h-4 w-4" />}>
-                          Add Subscriber
+                          {user?.role === 'ADMIN' ? 'Add Subscriber' : 'Subscribe Now'}
                         </Button>
                       </form>
                     </CardContent>
@@ -526,7 +553,14 @@ export const Dashboard: React.FC = () => {
                   <div className="px-6 py-5 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                       <CardTitle className="text-base">Subscription Database Repository</CardTitle>
-                      <CardDescription className="text-xs">Showing database records matching SELECT * FROM subscriptions;</CardDescription>
+                      <CardDescription className="text-xs">
+                        Showing database records matching{' '}
+                        <code className="bg-black/40 px-1 py-0.5 rounded text-purple-300 font-mono text-[10px]">
+                          {user?.role === 'ADMIN'
+                            ? 'SELECT * FROM subscriptions;'
+                            : `SELECT * FROM subscriptions WHERE user_email = '${user?.email}';`}
+                        </code>
+                      </CardDescription>
                     </div>
                   </div>
 
@@ -651,7 +685,14 @@ export const Dashboard: React.FC = () => {
                 <Card className="bg-black/20 border-white/5 overflow-hidden">
                   <CardHeader>
                     <CardTitle className="text-base font-heading">Invoice History Records</CardTitle>
-                    <CardDescription className="text-xs">Generated dynamically via billing cron triggers</CardDescription>
+                    <CardDescription className="text-xs">
+                      Showing invoice records matching{' '}
+                      <code className="bg-black/40 px-1 py-0.5 rounded text-purple-300 font-mono text-[10px]">
+                        {user?.role === 'ADMIN'
+                          ? 'SELECT * FROM invoices;'
+                          : `SELECT * FROM invoices WHERE user_email = '${user?.email}';`}
+                      </code>
+                    </CardDescription>
                   </CardHeader>
 
                   <div className="overflow-x-auto">

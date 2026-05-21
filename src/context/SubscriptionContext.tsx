@@ -154,7 +154,7 @@ const initialLogs: SystemLog[] = [
 ];
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [activePage, setActivePage] = useState<'landing' | 'dashboard'>('landing');
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors'>('overview');
@@ -197,6 +197,19 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     successRate: 0,
   });
 
+  // Filter subscriptions and invoices based on logged-in user role
+  const filteredSubscriptions = React.useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'ADMIN') return subscriptions;
+    return subscriptions.filter(s => s.userEmail.toLowerCase() === user.email.toLowerCase());
+  }, [subscriptions, user]);
+
+  const filteredInvoices = React.useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'ADMIN') return invoices;
+    return invoices.filter(i => i.userEmail.toLowerCase() === user.email.toLowerCase());
+  }, [invoices, user]);
+
   // Save to localStorage
   useEffect(() => {
     localStorage.setItem('subvault_sub_db', JSON.stringify(subscriptions));
@@ -238,10 +251,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Recalculate KPIs based on subscriptions
   useEffect(() => {
-    const activeSubs = subscriptions.filter(s => s.status === 'Active' || s.status === 'Trialing');
+    const activeSubs = filteredSubscriptions.filter(s => s.status === 'Active' || s.status === 'Trialing');
     
     // MRR calculation: Sum up amount normalized to monthly
-    const mrrTotal = subscriptions.reduce((sum, s) => {
+    const mrrTotal = filteredSubscriptions.reduce((sum, s) => {
       if (s.status !== 'Active' && s.status !== 'Trialing' && s.status !== 'Paused' && s.status !== 'Past Due') return sum;
       const subAmount = s.amount;
       const monthlyAmount = s.interval === 'yearly' ? subAmount / 12 : subAmount;
@@ -249,14 +262,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }, 0);
 
     // Churn calculation: Cancelled + Expired over total historical subs
-    const cancelledCount = subscriptions.filter(s => s.status === 'Cancelled' || s.status === 'Expired').length;
-    const totalHistorical = subscriptions.length;
+    const cancelledCount = filteredSubscriptions.filter(s => s.status === 'Cancelled' || s.status === 'Expired').length;
+    const totalHistorical = filteredSubscriptions.length;
     const churn = totalHistorical > 0 ? (cancelledCount / totalHistorical) * 100 : 0;
 
     // Success Rate calculation: Paid invoices / Total invoices
-    const paidCount = invoices.filter(i => i.status === 'Paid').length;
-    const totalInvoices = invoices.length;
-    const successRate = totalInvoices > 0 ? (paidCount / totalInvoices) * 100 : 95;
+    const paidCount = filteredInvoices.filter(i => i.status === 'Paid').length;
+    const totalInvoices = filteredInvoices.length;
+    const successRate = totalInvoices > 0 ? (paidCount / totalInvoices) * 100 : 100;
 
     setMetrics({
       mrr: Math.round(mrrTotal),
@@ -264,7 +277,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       churnRate: parseFloat(churn.toFixed(1)),
       successRate: parseFloat(successRate.toFixed(1)),
     });
-  }, [subscriptions, invoices]);
+  }, [filteredSubscriptions, filteredInvoices]);
 
   // Handle Theme switching
   const toggleTheme = () => {
@@ -632,8 +645,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setActivePage,
         dashboardTab,
         setDashboardTab,
-        subscriptions,
-        invoices,
+        subscriptions: filteredSubscriptions,
+        invoices: filteredInvoices,
         systemLogs,
         metrics,
         createSubscription,
