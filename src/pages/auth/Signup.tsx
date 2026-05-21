@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, ArrowRight, Github, Chrome, AlertCircle, Sparkles, Check } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Github, Chrome, Linkedin, AlertCircle, Sparkles, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 
@@ -79,7 +79,7 @@ export const Signup: React.FC = () => {
     }
   };
 
-  const handleOAuth = async (provider: 'google' | 'github') => {
+  const handleOAuth = async (provider: 'google' | 'github' | 'linkedin') => {
     setLoading(true);
     const success = await loginWithOAuth(provider);
     setLoading(false);
@@ -229,18 +229,24 @@ export const Signup: React.FC = () => {
           </div>
 
           {/* Social Sign Up */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => handleOAuth('google')}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-black/20 hover:bg-black/40 text-gray-300 hover:text-white transition-all text-xs font-semibold cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-black/20 hover:bg-black/40 text-gray-300 hover:text-white transition-all text-xs font-semibold cursor-pointer"
             >
-              <Chrome className="h-4 w-4" /> Google
+              <Chrome className="h-4 w-4 flex-shrink-0" /> Google
             </button>
             <button
               onClick={() => handleOAuth('github')}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-black/20 hover:bg-black/40 text-gray-300 hover:text-white transition-all text-xs font-semibold cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-black/20 hover:bg-black/40 text-gray-300 hover:text-white transition-all text-xs font-semibold cursor-pointer"
             >
-              <Github className="h-4 w-4" /> GitHub
+              <Github className="h-4 w-4 flex-shrink-0" /> GitHub
+            </button>
+            <button
+              onClick={() => handleOAuth('linkedin')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-black/20 hover:bg-black/40 text-gray-300 hover:text-white transition-all text-xs font-semibold cursor-pointer"
+            >
+              <Linkedin className="h-4 w-4 flex-shrink-0 text-[#0a66c2]" /> LinkedIn
             </button>
           </div>
 

@@ -7,7 +7,7 @@ import {
   updateProfile,
   onAuthStateChanged
 } from 'firebase/auth';
-import { auth, googleProvider, githubProvider, isFirebaseConfigured } from '../firebase';
+import { auth, googleProvider, githubProvider, linkedinProvider, isFirebaseConfigured } from '../firebase';
 
 export interface User {
   id: string;
@@ -30,7 +30,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
-  loginWithOAuth: (provider: 'google' | 'github') => Promise<boolean>;
+  loginWithOAuth: (provider: 'google' | 'github' | 'linkedin') => Promise<boolean>;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (password: string) => Promise<boolean>;
   logout: () => void;
@@ -330,13 +330,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithOAuth = async (provider: 'google' | 'github'): Promise<boolean> => {
+  const loginWithOAuth = async (provider: 'google' | 'github' | 'linkedin'): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
 
     try {
       if (isFirebaseConfigured) {
-        const p = provider === 'google' ? googleProvider : githubProvider;
+        const p = provider === 'google' ? googleProvider : provider === 'github' ? githubProvider : linkedinProvider;
         const result = await signInWithPopup(auth, p);
         const idToken = await result.user.getIdToken();
         const email = result.user.email || '';
@@ -363,7 +363,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Mock OAuth fallback
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const mockEmail = window.prompt(`Enter your ${provider === 'google' ? 'Google' : 'GitHub'} Account Email to sign in:`, `user@${provider}.com`);
+      const mockEmail = window.prompt(`Enter your ${provider === 'google' ? 'Google' : provider === 'github' ? 'GitHub' : 'LinkedIn'} Account Email to sign in:`, `user@${provider}.com`);
       if (!mockEmail) {
         setIsLoading(false);
         return false;

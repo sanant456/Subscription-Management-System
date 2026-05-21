@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, GithubAuthProvider, OAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "mock-api-key-for-local-dev-only",
@@ -21,5 +21,6 @@ const auth = getAuth(app);
 
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
+const linkedinProvider = new OAuthProvider('linkedin.com');
 
-export { app, auth, googleProvider, githubProvider };
+export { app, auth, googleProvider, githubProvider, linkedinProvider };
