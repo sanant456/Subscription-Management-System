@@ -74,14 +74,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Mock fallback: Enable mock logins so the dashboard is fully testable without running DB
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      // Force admin role for this specific email
-      const role: 'ADMIN' | 'USER' = email.toLowerCase() === 'admin@saascorp.com' ? 'ADMIN' : 'USER';
+      const mockUsersRaw = localStorage.getItem('subvault_mock_users');
+      const mockUsers = mockUsersRaw ? JSON.parse(mockUsersRaw) : [];
+
+      // Auto-populate default admin account for easy dashboard testing
+      if (email.toLowerCase() === 'admin@saascorp.com') {
+        const adminExists = mockUsers.find((u: any) => u.email.toLowerCase() === 'admin@saascorp.com');
+        if (!adminExists) {
+          const defaultAdmin = {
+            id: 'usr_admin',
+            name: 'Root Admin',
+            email: 'admin@saascorp.com',
+            password: 'password',
+            role: 'ADMIN' as const,
+            createdAt: new Date().toISOString().split('T')[0],
+          };
+          mockUsers.push(defaultAdmin);
+          localStorage.setItem('subvault_mock_users', JSON.stringify(mockUsers));
+        }
+      }
+
+      const matchedUser = mockUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+
+      if (!matchedUser) {
+        throw new Error('Invalid credentials. User registry not found.');
+      }
+
+      // Check registered password bounds
+      if (matchedUser.password && matchedUser.password !== password && email.toLowerCase() !== 'admin@saascorp.com') {
+        throw new Error('Access Denied: Invalid credentials.');
+      }
+
       const mockUser: User = {
-        id: `usr_${Math.random().toString(36).substring(2, 7)}`,
-        email,
-        name: email.split('@')[0].toUpperCase(),
-        role,
-        createdAt: new Date().toISOString().split('T')[0],
+        id: matchedUser.id,
+        email: matchedUser.email,
+        name: matchedUser.name,
+        role: matchedUser.role,
+        createdAt: matchedUser.createdAt,
       };
 
       const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2);
@@ -121,13 +150,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Mock fallback
       await new Promise((resolve) => setTimeout(resolve, 800));
+
+      const mockUsersRaw = localStorage.getItem('subvault_mock_users');
+      const mockUsers = mockUsersRaw ? JSON.parse(mockUsersRaw) : [];
+
+      const existingUser = mockUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser) {
+        throw new Error('Email registry conflict: Email already exists.');
+      }
+
       const role: 'ADMIN' | 'USER' = email.toLowerCase() === 'admin@saascorp.com' ? 'ADMIN' : 'USER';
-      const mockUser: User = {
+      const newMockUser = {
         id: `usr_${Math.random().toString(36).substring(2, 7)}`,
         email,
-        name: name,
+        name,
+        password,
         role,
         createdAt: new Date().toISOString().split('T')[0],
+      };
+
+      mockUsers.push(newMockUser);
+      localStorage.setItem('subvault_mock_users', JSON.stringify(mockUsers));
+
+      const mockUser: User = {
+        id: newMockUser.id,
+        email: newMockUser.email,
+        name: newMockUser.name,
+        role: newMockUser.role,
+        createdAt: newMockUser.createdAt,
       };
 
       const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2);
