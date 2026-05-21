@@ -21,6 +21,9 @@ const seedLocalStore = () => {
       email: 'sarah@saasflow.com',
       password: '$2a$10$U.V1Z4j73j5N.qQ1S.t6A.d08B5o2C0t1y0eU8z8K1L4U4d4e4F4G', // mock hashed password
       role: 'ADMIN',
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      subscriptionStatus: 'inactive',
       createdAt: new Date()
     }
   ];
@@ -105,7 +108,14 @@ export const db = {
     },
     create: async (args: { data: any }) => {
       if (!useFallback && prisma) return prisma.user.create(args);
-      const newUser = { id: `usr_${Math.random().toString(36).substring(2, 9)}`, createdAt: new Date(), ...args.data };
+      const newUser = { 
+        id: `usr_${Math.random().toString(36).substring(2, 9)}`, 
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionStatus: 'inactive',
+        createdAt: new Date(), 
+        ...args.data 
+      };
       localStore.users.push(newUser);
       saveLocalStore();
       return newUser;

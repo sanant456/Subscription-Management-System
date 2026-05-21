@@ -21,7 +21,7 @@ import { AdminPanel } from '../components/AdminPanel';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   
   const {
     theme,
@@ -78,6 +78,107 @@ export const Dashboard: React.FC = () => {
     }
   }, [user]);
 
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  // Handle URL checkout redirects & mock checkout simulation webhook triggers
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mockCheckout = params.get('mock_checkout');
+    const checkoutStatus = params.get('checkout_status');
+    const plan = params.get('plan') as PlanType;
+    const interval = params.get('interval') as BillingInterval;
+
+    if (mockCheckout === 'true' && plan && interval) {
+      const runSimulation = async () => {
+        addLog('Billing Service', `Triggering mock webhook simulation for plan: ${plan} (${interval})`, 'info');
+        try {
+          const response = await fetch('/api/stripe/simulate-webhook', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ plan, interval })
+          });
+          const data = await response.json();
+          if (data.success) {
+            addLog('Subscription Service', `Mock subscription activated successfully!`, 'success');
+            confetti({
+              particleCount: 150,
+              spread: 80,
+              origin: { y: 0.6 }
+            });
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            addLog('API Gateway', `Simulation failed: ${data.error}`, 'error');
+          }
+        } catch (e: any) {
+          addLog('API Gateway', `Simulation connection error: ${e.message}`, 'error');
+        }
+      };
+      runSimulation();
+    } else if (checkoutStatus === 'success') {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+      addLog('Billing Service', 'Stripe checkout completed successfully!', 'success');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else if (checkoutStatus === 'cancel') {
+      addLog('Billing Service', 'Stripe checkout cancelled by user.', 'warn');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [token]);
+
+  // Handle pending checkout selected from Landing Page
+  useEffect(() => {
+    if (!token || token.startsWith('mock_')) return;
+    
+    const pending = localStorage.getItem('subvault_pending_checkout');
+    if (pending) {
+      localStorage.removeItem('subvault_pending_checkout');
+      try {
+        const { plan, interval } = JSON.parse(pending);
+        if (plan && interval) {
+          addLog('Subscription Service', `Processing pending plan signup from Landing Page: ${plan} (${interval})`, 'info');
+          const initiatePendingCheckout = async () => {
+            setCheckoutLoading(true);
+            try {
+              const response = await fetch('/api/stripe/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ plan, interval })
+              });
+              const data = await response.json();
+              if (data.success && data.url) {
+                window.location.href = data.url;
+              } else {
+                setFormError(data.error || 'Failed to initiate pending checkout.');
+              }
+            } catch (err: any) {
+              setFormError(err.message || 'Error redirecting to checkout.');
+            } finally {
+              setCheckoutLoading(false);
+            }
+          };
+          initiatePendingCheckout();
+        }
+      } catch (e) {
+        console.error('Failed to parse pending checkout selection:', e);
+      }
+    }
+  }, [token]);
+
   // Form State
   const [newEmail, setNewEmail] = useState('');
   const [newPlan, setNewPlan] = useState<PlanType>('Pro');
@@ -92,7 +193,7 @@ export const Dashboard: React.FC = () => {
   const [apiMethod, setApiMethod] = useState<'POST' | 'GET' | 'PATCH'>('POST');
   const [apiEndpoint, setApiEndpoint] = useState('/subscriptions');
 
-  const handleCreateSub = (e: React.FormEvent) => {
+  const handleCreateSub = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     if (!newEmail || !newEmail.includes('@')) {
@@ -100,9 +201,34 @@ export const Dashboard: React.FC = () => {
       return;
     }
     
-    createSubscription(newEmail, newPlan, newInterval);
-    setNewEmail(user?.role === 'ADMIN' ? '' : user?.email || '');
-    addLog('Subscription Service', `Created new subscription from Dashboard Form: ${newEmail}`, 'success');
+    if (user?.role === 'ADMIN') {
+      createSubscription(newEmail, newPlan, newInterval);
+      setNewEmail('');
+      addLog('Subscription Service', `Created new subscription from Dashboard Form: ${newEmail}`, 'success');
+    } else {
+      setCheckoutLoading(true);
+      try {
+        const response = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ plan: newPlan, interval: newInterval })
+        });
+        const data = await response.json();
+        if (data.success && data.url) {
+          addLog('Billing Service', `Redirecting to Stripe checkout for ${newPlan} (${newInterval})`, 'info');
+          window.location.href = data.url;
+        } else {
+          setFormError(data.error || 'Failed to generate checkout session.');
+        }
+      } catch (err: any) {
+        setFormError(err.message || 'Error connecting to billing service.');
+      } finally {
+        setCheckoutLoading(false);
+      }
+    }
   };
 
   const runApiConsole = async () => {
@@ -506,7 +632,13 @@ export const Dashboard: React.FC = () => {
                           </div>
                         )}
 
-                        <Button type="submit" variant="primary" className="w-full" leftIcon={<Plus className="h-4 w-4" />}>
+                        <Button 
+                          type="submit" 
+                          variant="primary" 
+                          className="w-full" 
+                          isLoading={checkoutLoading} 
+                          leftIcon={<Plus className="h-4 w-4" />}
+                        >
                           {user?.role === 'ADMIN' ? 'Add Subscriber' : 'Subscribe Now'}
                         </Button>
                       </form>

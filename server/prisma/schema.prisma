@@ -13,14 +13,17 @@ enum Role {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  password      String
-  role          Role           @default(USER)
-  createdAt     DateTime       @default(now())
-  subscriptions Subscription[]
-  invoices      Invoice[]
+  id                   String         @id @default(uuid())
+  name                 String
+  email                String         @unique
+  password             String
+  role                 Role           @default(USER)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String         @default("inactive")
+  createdAt            DateTime       @default(now())
+  subscriptions        Subscription[]
+  invoices             Invoice[]
 }
 
 model Subscription {

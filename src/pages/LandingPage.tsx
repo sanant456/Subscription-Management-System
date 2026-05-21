@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '../context/SubscriptionContext';
 import type { PlanType, BillingInterval } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { 
@@ -56,9 +57,43 @@ export const LandingPage: React.FC = () => {
     theme, toggleTheme, setActivePage, createSubscription, 
     triggerMockApi, systemLogs 
   } = useSubscription();
+  const { token } = useAuth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
+  const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handleSelectPlan = async (plan: PlanType) => {
+    setCheckoutError(null);
+    if (token) {
+      setCheckoutLoadingPlan(plan);
+      try {
+        const response = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ plan, interval: billingInterval })
+        });
+        const data = await response.json();
+        if (data.success && data.url) {
+          window.location.href = data.url;
+        } else {
+          setCheckoutError(data.error || 'Failed to create checkout session.');
+        }
+      } catch (err: any) {
+        setCheckoutError(err.message || 'Network error initiating checkout.');
+      } finally {
+        setCheckoutLoadingPlan(null);
+      }
+    } else {
+      // Save pending checkout config
+      localStorage.setItem('subvault_pending_checkout', JSON.stringify({ plan, interval: billingInterval }));
+      navigate('/auth/signup');
+    }
+  };
   const [activeChart, setActiveChart] = useState<'revenue' | 'churn' | 'growth' | 'success'>('revenue');
   
   // API Showcase playground state
@@ -178,8 +213,14 @@ export const LandingPage: React.FC = () => {
             >
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <Button variant="ghost" onClick={() => navigate('/auth/login')}>Sign In</Button>
-            <Button variant="glow" onClick={() => navigate('/auth/signup')}>Get Started</Button>
+            {token ? (
+              <Button variant="glow" onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate('/auth/login')}>Sign In</Button>
+                <Button variant="glow" onClick={() => navigate('/auth/signup')}>Get Started</Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Btn */}
@@ -217,8 +258,14 @@ export const LandingPage: React.FC = () => {
               <a href="#security" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-400">Security</a>
               <a href="#api" onClick={() => setMobileMenuOpen(false)} className="hover:text-purple-400">API Console</a>
               <hr className="border-white/5 my-2" />
-              <Button variant="ghost" className="w-full justify-center" onClick={() => { navigate('/auth/login'); setMobileMenuOpen(false); }}>Sign In</Button>
-              <Button variant="glow" className="w-full justify-center" onClick={() => { navigate('/auth/signup'); setMobileMenuOpen(false); }}>Get Started</Button>
+              {token ? (
+                <Button variant="glow" className="w-full justify-center" onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}>Go to Dashboard</Button>
+              ) : (
+                <>
+                  <Button variant="ghost" className="w-full justify-center" onClick={() => { navigate('/auth/login'); setMobileMenuOpen(false); }}>Sign In</Button>
+                  <Button variant="glow" className="w-full justify-center" onClick={() => { navigate('/auth/signup'); setMobileMenuOpen(false); }}>Get Started</Button>
+                </>
+              )}
             </div>
           </motion.div>
         )}
@@ -551,6 +598,13 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
+        {checkoutError && (
+          <div className="max-w-md mx-auto mb-8 p-4 rounded-xl border border-rose-500/20 bg-rose-950/20 text-rose-300 text-sm flex items-center gap-2.5">
+            <AlertCircle className="h-5 w-5 text-rose-400 flex-shrink-0" />
+            <span>{checkoutError}</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
           {/* Basic Plan */}
           <Card className="flex flex-col justify-between border-white/5 hover:border-purple-500/20 bg-black/20">
@@ -587,7 +641,12 @@ export const LandingPage: React.FC = () => {
                 </li>
               </ul>
             </CardContent>
-            <Button variant="secondary" className="w-full mt-8" onClick={() => navigate('/auth/signup')}>
+            <Button 
+              variant="secondary" 
+              className="w-full mt-8" 
+              onClick={() => handleSelectPlan('Basic')}
+              isLoading={checkoutLoadingPlan === 'Basic'}
+            >
               Get Started
             </Button>
           </Card>
@@ -631,7 +690,12 @@ export const LandingPage: React.FC = () => {
                 </li>
               </ul>
             </CardContent>
-            <Button variant="glow" className="w-full mt-8" onClick={() => navigate('/auth/signup')}>
+            <Button 
+              variant="glow" 
+              className="w-full mt-8" 
+              onClick={() => handleSelectPlan('Pro')}
+              isLoading={checkoutLoadingPlan === 'Pro'}
+            >
               Get Pro
             </Button>
           </Card>
@@ -673,8 +737,13 @@ export const LandingPage: React.FC = () => {
                 </li>
               </ul>
             </CardContent>
-            <Button variant="secondary" className="w-full mt-8" onClick={() => navigate('/auth/signup')}>
-              Contact Sales
+            <Button 
+              variant="secondary" 
+              className="w-full mt-8" 
+              onClick={() => handleSelectPlan('Enterprise')}
+              isLoading={checkoutLoadingPlan === 'Enterprise'}
+            >
+              Get Enterprise
             </Button>
           </Card>
         </div>

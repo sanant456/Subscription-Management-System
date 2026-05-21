@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import authRouter from './routes/auth';
 import subscriptionRouter from './routes/subscriptions';
 import adminRouter from './routes/admin';
+import stripeRouter from './routes/stripe';
 
 dotenv.config();
 
@@ -24,12 +25,17 @@ const io = new Server(server, {
 
 // Configure Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 // Bind API Routers
 app.use('/api/auth', authRouter);
 app.use('/api/subscriptions', subscriptionRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/stripe', stripeRouter);
 
 // Base Check Route
 app.get('/', (req, res) => {
