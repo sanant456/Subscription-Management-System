@@ -157,6 +157,10 @@ export const db = {
       if (idx === -1) throw new Error('Subscription not found');
       const deleted = localStore.subscriptions[idx];
       localStore.subscriptions.splice(idx, 1);
+      
+      // Cascade delete: filter out invoices associated with this subscription
+      localStore.invoices = localStore.invoices.filter(i => i.subscriptionId !== args.where.id);
+      
       saveLocalStore();
       return deleted;
     }

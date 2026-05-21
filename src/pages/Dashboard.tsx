@@ -140,7 +140,16 @@ export const Dashboard: React.FC = () => {
     const oldPrice = pricing[selectedSub.plan][selectedSub.interval];
     const newPrice = pricing[proratePlan][prorateInterval];
 
-    const credit = Math.round((oldPrice * 0.5) * 100) / 100;
+    // Align with dynamic backend proration calculation
+    const now = Date.now();
+    const nextBilling = new Date(selectedSub.nextBillingDate).getTime();
+    const oldIntervalDays = selectedSub.interval === 'yearly' ? 365 : 30;
+    const cycleDurationMs = oldIntervalDays * 24 * 60 * 60 * 1000;
+    
+    const remainingMs = nextBilling - now;
+    const remainingProportion = Math.max(0, Math.min(1, remainingMs / cycleDurationMs));
+    
+    const credit = Math.round((oldPrice * remainingProportion) * 100) / 100;
     const dueToday = Math.max(0, newPrice - credit);
     const balanceRemaining = newPrice < credit ? Math.round((credit - newPrice) * 100) / 100 : 0;
 
