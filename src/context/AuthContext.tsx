@@ -39,6 +39,38 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const syncWithBackend = async (name: string, email: string, uid: string): Promise<string | null> => {
+  const backendPassword = `Firebase_User_Secret_${uid}_Key_129`;
+  try {
+    // 1. Try to login
+    const loginResponse = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: backendPassword })
+    }).catch(() => null);
+
+    if (loginResponse && loginResponse.ok) {
+      const data = await loginResponse.json();
+      return data.token;
+    }
+
+    // 2. If login fails (user does not exist), try to signup
+    const signupResponse = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password: backendPassword })
+    }).catch(() => null);
+
+    if (signupResponse && signupResponse.ok) {
+      const data = await signupResponse.json();
+      return data.token;
+    }
+  } catch (e) {
+    console.warn("Express backend authentication sync failed. Falling back.", e);
+  }
+  return null;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -51,18 +83,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
           try {
-            const idToken = await firebaseUser.getIdToken();
             const email = firebaseUser.email || '';
+            const name = firebaseUser.displayName || email.split('@')[0] || 'User';
+            const idToken = await firebaseUser.getIdToken();
+            
+            // Sync user with backend to obtain a valid backend JWT signature
+            const backendToken = await syncWithBackend(name, email, firebaseUser.uid);
+            const finalToken = backendToken || idToken;
+
             const userObj: User = {
               id: firebaseUser.uid,
               email: email,
-              name: firebaseUser.displayName || email.split('@')[0] || 'User',
+              name: name,
               role: isEmailAdmin(email) ? 'ADMIN' : 'USER',
               createdAt: firebaseUser.metadata.creationTime ? new Date(firebaseUser.metadata.creationTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
             };
             setUser(userObj);
-            setToken(idToken);
-            localStorage.setItem('subvault_auth_token', idToken);
+            setToken(finalToken);
+            localStorage.setItem('subvault_auth_token', finalToken);
             localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
           } catch (e) {
             console.error("Error updating AuthContext from Firebase change:", e);
@@ -125,16 +163,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const idToken = await userCredential.user.getIdToken();
         const firebaseEmail = userCredential.user.email || '';
+        const name = userCredential.user.displayName || firebaseEmail.split('@')[0] || 'User';
+        
+        const backendToken = await syncWithBackend(name, firebaseEmail, userCredential.user.uid);
+        const finalToken = backendToken || idToken;
+
         const userObj: User = {
           id: userCredential.user.uid,
           email: firebaseEmail,
-          name: userCredential.user.displayName || firebaseEmail.split('@')[0] || 'User',
+          name: name,
           role: isEmailAdmin(firebaseEmail) ? 'ADMIN' : 'USER',
           createdAt: new Date().toISOString().split('T')[0]
         };
         setUser(userObj);
-        setToken(idToken);
-        localStorage.setItem('subvault_auth_token', idToken);
+        setToken(finalToken);
+        localStorage.setItem('subvault_auth_token', finalToken);
         localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
         setIsLoading(false);
         return true;
@@ -222,6 +265,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         const idToken = await userCredential.user.getIdToken();
+        
+        const backendToken = await syncWithBackend(name, email, userCredential.user.uid);
+        const finalToken = backendToken || idToken;
+
         const userObj: User = {
           id: userCredential.user.uid,
           email: email,
@@ -230,8 +277,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: new Date().toISOString().split('T')[0]
         };
         setUser(userObj);
-        setToken(idToken);
-        localStorage.setItem('subvault_auth_token', idToken);
+        setToken(finalToken);
+        localStorage.setItem('subvault_auth_token', finalToken);
         localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
         setIsLoading(false);
         return true;
@@ -293,16 +340,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const result = await signInWithPopup(auth, p);
         const idToken = await result.user.getIdToken();
         const email = result.user.email || '';
+        const name = result.user.displayName || email.split('@')[0] || 'User';
+
+        const backendToken = await syncWithBackend(name, email, result.user.uid);
+        const finalToken = backendToken || idToken;
+
         const userObj: User = {
           id: result.user.uid,
           email: email,
-          name: result.user.displayName || email.split('@')[0] || 'User',
+          name: name,
           role: isEmailAdmin(email) ? 'ADMIN' : 'USER',
           createdAt: new Date().toISOString().split('T')[0]
         };
         setUser(userObj);
-        setToken(idToken);
-        localStorage.setItem('subvault_auth_token', idToken);
+        setToken(finalToken);
+        localStorage.setItem('subvault_auth_token', finalToken);
         localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
         setIsLoading(false);
         return true;
