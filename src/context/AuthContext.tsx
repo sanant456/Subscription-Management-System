@@ -8,6 +8,7 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, linkedinProvider, isFirebaseConfigured } from '../firebase';
+import { MockOAuthModal } from '../components/MockOAuthModal';
 
 export interface User {
   id: string;
@@ -76,6 +77,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [mockOAuthState, setMockOAuthState] = useState<{
+    isOpen: boolean;
+    provider: 'google' | 'github' | 'linkedin' | null;
+    resolve: ((value: { email: string; name: string } | null) => void) | null;
+  }>({
+    isOpen: false,
+    provider: null,
+    resolve: null,
+  });
 
   // Restore session on boot / Listen to Firebase auth changes
   useEffect(() => {
@@ -359,21 +369,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
         return true;
       }
-
       // Mock OAuth fallback
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const modalResult = await new Promise<{ email: string; name: string } | null>((resolve) => {
+        setMockOAuthState({
+          isOpen: true,
+          provider,
+          resolve,
+        });
+      });
 
-      const mockEmail = window.prompt(`Enter your ${provider === 'google' ? 'Google' : provider === 'github' ? 'GitHub' : 'LinkedIn'} Account Email to sign in:`, `user@${provider}.com`);
-      if (!mockEmail) {
+      if (!modalResult) {
         setIsLoading(false);
         return false;
       }
 
-      const mockName = window.prompt(`Enter your Display Name:`, mockEmail.split('@')[0].toUpperCase());
-      if (!mockName) {
-        setIsLoading(false);
-        return false;
-      }
+      const { email: mockEmail, name: mockName } = modalResult;
 
       // Try to register/login via backend if backend is available
       const oauthPassword = `OAuth_Fallback_Pass_${provider}_981273`;
@@ -489,6 +499,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
+      <MockOAuthModal
+        isOpen={mockOAuthState.isOpen}
+        provider={mockOAuthState.provider}
+        onResolve={(value) => {
+          if (mockOAuthState.resolve) {
+            mockOAuthState.resolve(value);
+          }
+          setMockOAuthState({ isOpen: false, provider: null, resolve: null });
+        }}
+      />
     </AuthContext.Provider>
   );
 };

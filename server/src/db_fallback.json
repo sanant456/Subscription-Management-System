@@ -7,6 +7,17 @@
       "password": "$2a$10$U.V1Z4j73j5N.qQ1S.t6A.d08B5o2C0t1y0eU8z8K1L4U4d4e4F4G",
       "role": "ADMIN",
       "createdAt": "2026-05-20T13:52:12.893Z"
+    },
+    {
+      "id": "usr_lpzqkca",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-05-21T19:25:06.679Z",
+      "name": "USER",
+      "email": "user@google.com",
+      "password": "$2a$10$R.5RQ8O5bdGDmRn3WB1JeeJZC8UljjGElhwHNswMLQ52Z/807YDFi",
+      "role": "USER"
     }
   ],
   "subscriptions": [
