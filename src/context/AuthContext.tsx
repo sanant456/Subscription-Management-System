@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  signOut as firebaseSignOut, 
+  updateProfile,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { auth, googleProvider, githubProvider, isFirebaseConfigured } from '../firebase';
 
 export interface User {
   id: string;
@@ -31,22 +40,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Restore session on boot
+  // Restore session on boot / Listen to Firebase auth changes
   useEffect(() => {
-    const savedToken = localStorage.getItem('subvault_auth_token');
-    const savedUser = localStorage.getItem('subvault_auth_user');
+    if (isFirebaseConfigured) {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          try {
+            const idToken = await firebaseUser.getIdToken();
+            const email = firebaseUser.email || '';
+            const userObj: User = {
+              id: firebaseUser.uid,
+              email: email,
+              name: firebaseUser.displayName || email.split('@')[0] || 'User',
+              role: (email.toLowerCase() === 'admin@saascorp.com' || email.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER',
+              createdAt: firebaseUser.metadata.creationTime ? new Date(firebaseUser.metadata.creationTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+            };
+            setUser(userObj);
+            setToken(idToken);
+            localStorage.setItem('subvault_auth_token', idToken);
+            localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
+          } catch (e) {
+            console.error("Error updating AuthContext from Firebase change:", e);
+          }
+        } else {
+          // If we had a token, and now there is no Firebase user, clear it
+          const savedToken = localStorage.getItem('subvault_auth_token');
+          if (savedToken && !savedToken.startsWith('mock_')) {
+            setUser(null);
+            setToken(null);
+            localStorage.removeItem('subvault_auth_token');
+            localStorage.removeItem('subvault_auth_user');
+          }
+        }
+        setIsLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
+      const savedToken = localStorage.getItem('subvault_auth_token');
+      const savedUser = localStorage.getItem('subvault_auth_user');
 
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.warn("Failed to parse saved user credentials from localStorage, clearing session...", e);
-        localStorage.removeItem('subvault_auth_token');
-        localStorage.removeItem('subvault_auth_user');
+      if (savedToken && savedUser) {
+        try {
+          setToken(savedToken);
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.warn("Failed to parse saved user credentials from localStorage, clearing session...", e);
+          localStorage.removeItem('subvault_auth_token');
+          localStorage.removeItem('subvault_auth_user');
+        }
       }
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -67,6 +111,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(data.token);
         localStorage.setItem('subvault_auth_token', data.token);
         localStorage.setItem('subvault_auth_user', JSON.stringify(data.user));
+        setIsLoading(false);
+        return true;
+      }
+
+      // Real Firebase Auth
+      if (isFirebaseConfigured) {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const idToken = await userCredential.user.getIdToken();
+        const firebaseEmail = userCredential.user.email || '';
+        const userObj: User = {
+          id: userCredential.user.uid,
+          email: firebaseEmail,
+          name: userCredential.user.displayName || firebaseEmail.split('@')[0] || 'User',
+          role: (firebaseEmail.toLowerCase() === 'admin@saascorp.com' || firebaseEmail.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER',
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setUser(userObj);
+        setToken(idToken);
+        localStorage.setItem('subvault_auth_token', idToken);
+        localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
         setIsLoading(false);
         return true;
       }
@@ -148,6 +212,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
 
+      // Real Firebase Auth
+      if (isFirebaseConfigured) {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: name });
+        const idToken = await userCredential.user.getIdToken();
+        const userObj: User = {
+          id: userCredential.user.uid,
+          email: email,
+          name: name,
+          role: (email.toLowerCase() === 'admin@saascorp.com' || email.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER',
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setUser(userObj);
+        setToken(idToken);
+        localStorage.setItem('subvault_auth_token', idToken);
+        localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
+        setIsLoading(false);
+        return true;
+      }
+
       // Mock fallback
       await new Promise((resolve) => setTimeout(resolve, 800));
 
@@ -197,21 +281,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithOAuth = async (provider: 'google' | 'github'): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const mockUser: User = {
-      id: `usr_oauth_${Math.random().toString(36).substring(2, 5)}`,
-      email: `oauth.${provider}@example.com`,
-      name: `${provider.toUpperCase()} Developer`,
-      role: 'USER',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    const mockToken = 'mock_oauth_jwt_token_' + Math.random().toString(36).substring(2);
-    setUser(mockUser);
-    setToken(mockToken);
-    localStorage.setItem('subvault_auth_token', mockToken);
-    localStorage.setItem('subvault_auth_user', JSON.stringify(mockUser));
-    setIsLoading(false);
-    return true;
+
+    try {
+      if (isFirebaseConfigured) {
+        const p = provider === 'google' ? googleProvider : githubProvider;
+        const result = await signInWithPopup(auth, p);
+        const idToken = await result.user.getIdToken();
+        const email = result.user.email || '';
+        const userObj: User = {
+          id: result.user.uid,
+          email: email,
+          name: result.user.displayName || email.split('@')[0] || 'User',
+          role: (email.toLowerCase() === 'admin@saascorp.com' || email.toLowerCase().includes('admin')) ? 'ADMIN' : 'USER',
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setUser(userObj);
+        setToken(idToken);
+        localStorage.setItem('subvault_auth_token', idToken);
+        localStorage.setItem('subvault_auth_user', JSON.stringify(userObj));
+        setIsLoading(false);
+        return true;
+      }
+
+      // Mock OAuth fallback
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      const mockEmail = window.prompt(`Enter your ${provider === 'google' ? 'Google' : 'GitHub'} Account Email to sign in:`, `user@${provider}.com`);
+      if (!mockEmail) {
+        setIsLoading(false);
+        return false;
+      }
+
+      const mockName = window.prompt(`Enter your Display Name:`, mockEmail.split('@')[0].toUpperCase());
+      if (!mockName) {
+        setIsLoading(false);
+        return false;
+      }
+
+      const role: 'ADMIN' | 'USER' = mockEmail.toLowerCase() === 'admin@saascorp.com' || mockEmail.toLowerCase().includes('admin') ? 'ADMIN' : 'USER';
+      const mockUser: User = {
+        id: `usr_oauth_${Math.random().toString(36).substring(2, 7)}`,
+        email: mockEmail,
+        name: mockName,
+        role,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+
+      const mockToken = `mock_oauth_${provider}_` + Math.random().toString(36).substring(2);
+      setUser(mockUser);
+      setToken(mockToken);
+      localStorage.setItem('subvault_auth_token', mockToken);
+      localStorage.setItem('subvault_auth_user', JSON.stringify(mockUser));
+      setIsLoading(false);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'OAuth authentication failed');
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const forgotPassword = async (email: string): Promise<boolean> => {
@@ -230,7 +357,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (isFirebaseConfigured) {
+      try {
+        await firebaseSignOut(auth);
+      } catch (e) {
+        console.error("Error signing out from Firebase:", e);
+      }
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem('subvault_auth_token');
