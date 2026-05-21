@@ -1,6 +1,7 @@
 # <p align="center"><img src=".github/assets/banner.png" alt="SubVault Banner" width="100%"></p>
 
 <p align="center">
+  <a href="https://subscription-management-system-7c9tmf83n-sanant456s-projects.vercel.app"><img src="https://img.shields.io/badge/Vercel-Live_Demo-8A2BE2?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo"></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind v4"></a>
