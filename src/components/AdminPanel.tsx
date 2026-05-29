@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, ShieldAlert, Radio, Cpu, RefreshCw, CheckCircle, XCircle, 
-  Trash2, ShieldCheck, Mail, Calendar, Activity, Database
+  Users, ShieldAlert, Radio, Cpu, RefreshCw, CheckCircle, 
+  ShieldCheck, Calendar, Activity, Database
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -32,12 +32,21 @@ interface RefundRequest {
 }
 
 export const AdminPanel: React.FC = () => {
-  const { subscriptions, triggerMockApi, invoices } = useSubscription();
+  const { triggerMockApi } = useSubscription();
   const [activeTab, setActiveTab] = useState<'users' | 'refunds' | 'broadcast' | 'health'>('users');
   
   // States
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [refunds, setRefunds] = useState<RefundRequest[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([
+    { id: 'usr_1', name: 'Sarah Jenkins', email: 'sarah@saasflow.com', role: 'ADMIN', plan: 'Enterprise', status: 'Active', createdAt: '2026-01-15' },
+    { id: 'usr_2', name: 'Marcus Chen', email: 'marcus@mailsync.io', role: 'USER', plan: 'Pro', status: 'Active', createdAt: '2026-02-10' },
+    { id: 'usr_3', name: 'Elena Rostova', email: 'elena@metricbase.co', role: 'USER', plan: 'Pro', status: 'Trialing', createdAt: '2026-03-01' },
+    { id: 'usr_4', name: 'John Doe', email: 'john@example.com', role: 'USER', plan: 'Starter', status: 'Past Due', createdAt: '2026-04-12' },
+    { id: 'usr_5', name: 'Jane Smith', email: 'jane@sandbox.net', role: 'USER', plan: 'Starter', status: 'Cancelled', createdAt: '2026-04-18' },
+  ]);
+  const [refunds, setRefunds] = useState<RefundRequest[]>([
+    { id: 'ref_1', userEmail: 'john@example.com', planName: 'Basic', amount: 1500, requestDate: '2026-05-19', reason: 'Accidental double checkout on dashboard' },
+    { id: 'ref_2', userEmail: 'jane@sandbox.net', planName: 'Pro', amount: 4000, requestDate: '2026-05-20', reason: 'Downgraded midway through month' }
+  ]);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastHistory, setBroadcastHistory] = useState<string[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -46,22 +55,6 @@ export const AdminPanel: React.FC = () => {
 
   // Initialize data
   useEffect(() => {
-    // Compile mock users list from local context state
-    const generatedUsers: AdminUser[] = [
-      { id: 'usr_1', name: 'Sarah Jenkins', email: 'sarah@saasflow.com', role: 'ADMIN', plan: 'Enterprise', status: 'Active', createdAt: '2026-01-15' },
-      { id: 'usr_2', name: 'Marcus Chen', email: 'marcus@mailsync.io', role: 'USER', plan: 'Pro', status: 'Active', createdAt: '2026-02-10' },
-      { id: 'usr_3', name: 'Elena Rostova', email: 'elena@metricbase.co', role: 'USER', plan: 'Pro', status: 'Trialing', createdAt: '2026-03-01' },
-      { id: 'usr_4', name: 'John Doe', email: 'john@example.com', role: 'USER', plan: 'Starter', status: 'Past Due', createdAt: '2026-04-12' },
-      { id: 'usr_5', name: 'Jane Smith', email: 'jane@sandbox.net', role: 'USER', plan: 'Starter', status: 'Cancelled', createdAt: '2026-04-18' },
-    ];
-    setUsers(generatedUsers);
-
-    // Compile mock refund requests
-    setRefunds([
-      { id: 'ref_1', userEmail: 'john@example.com', planName: 'Basic', amount: 1500, requestDate: '2026-05-19', reason: 'Accidental double checkout on dashboard' },
-      { id: 'ref_2', userEmail: 'jane@sandbox.net', planName: 'Pro', amount: 4000, requestDate: '2026-05-20', reason: 'Downgraded midway through month' }
-    ]);
-
     // Live Socket connection
     const socketUrl = window.location.origin.replace(/^http/, 'ws');
     const newSocket = io(socketUrl, {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Chrome, Github, Linkedin, ArrowRight, X, Mail, Shield, User, Info, Check, LogIn } from 'lucide-react';
+import { Github, X, Mail, Shield, User, Info, Check, LogIn } from 'lucide-react';
 
 interface MockOAuthModalProps {
   isOpen: boolean;
@@ -137,7 +137,7 @@ export const MockOAuthModal: React.FC<MockOAuthModalProps> = ({
                   </svg>
                 </div>
                 <h3 className="font-heading font-semibold text-xl text-gray-900">Choose an account</h3>
-                <p className="text-sm text-gray-500 mt-1">to continue to <span className="font-medium text-purple-600 font-heading">AchieveSub</span></p>
+                <p className="text-sm text-gray-500 mt-1">to continue to <span className="font-medium text-purple-600 font-heading">SubVault</span></p>
               </div>
 
               {submitting && (
@@ -285,7 +285,7 @@ export const MockOAuthModal: React.FC<MockOAuthModalProps> = ({
                     Authorize saascorp-org
                   </h4>
                   <p className="text-center text-xs text-gray-400 mb-6 leading-relaxed">
-                    wants to access your basic GitHub account information to sign in to <strong className="text-purple-400">AchieveSub</strong>.
+                    wants to access your basic GitHub account information to sign in to <strong className="text-purple-400">SubVault</strong>.
                   </p>
 
                   <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 mb-6 space-y-3.5">
@@ -385,7 +385,7 @@ export const MockOAuthModal: React.FC<MockOAuthModalProps> = ({
                     Sign in to LinkedIn
                   </h4>
                   <p className="text-xs text-gray-500 mb-5 leading-normal">
-                    Authorize <span className="font-semibold text-purple-600 font-heading">AchieveSub</span> to access your professional credentials.
+                    Authorize <span className="font-semibold text-purple-600 font-heading">SubVault</span> to access your professional credentials.
                   </p>
 
                   <form onSubmit={handleSubmitCustom} className="space-y-4">

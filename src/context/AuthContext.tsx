@@ -18,9 +18,23 @@ export interface User {
   createdAt: string;
 }
 
+interface MockUser {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: 'USER' | 'ADMIN';
+  createdAt: string;
+}
+
+// Authorized admin emails — whitelist only (no pattern matching for security)
+const ADMIN_EMAILS: ReadonlySet<string> = new Set([
+  'admin@saascorp.com',
+  'sarah@saasflow.com',
+]);
+
 const isEmailAdmin = (email: string): boolean => {
-  const lower = email.toLowerCase();
-  return lower === 'admin@saascorp.com' || lower.includes('admin') || lower === 'sarah@saasflow.com';
+  return ADMIN_EMAILS.has(email.toLowerCase());
 };
 
 interface AuthContextType {
@@ -73,8 +87,20 @@ const syncWithBackend = async (name: string, email: string, uid: string): Promis
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('subvault_auth_user');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (e) {
+        console.warn("Failed to parse saved user credentials from localStorage during initialization:", e);
+      }
+    }
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('subvault_auth_token') || null;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mockOAuthState, setMockOAuthState] = useState<{
@@ -129,19 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       return () => unsubscribe();
     } else {
-      const savedToken = localStorage.getItem('subvault_auth_token');
-      const savedUser = localStorage.getItem('subvault_auth_user');
-
-      if (savedToken && savedUser) {
-        try {
-          setToken(savedToken);
-          setUser(JSON.parse(savedUser));
-        } catch (e) {
-          console.warn("Failed to parse saved user credentials from localStorage, clearing session...", e);
-          localStorage.removeItem('subvault_auth_token');
-          localStorage.removeItem('subvault_auth_user');
-        }
-      }
       setIsLoading(false);
     }
   }, []);
@@ -197,11 +210,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const mockUsersRaw = localStorage.getItem('subvault_mock_users');
-      const mockUsers = mockUsersRaw ? JSON.parse(mockUsersRaw) : [];
+      const mockUsers: MockUser[] = mockUsersRaw ? JSON.parse(mockUsersRaw) : [];
 
       // Auto-populate default admin account for easy dashboard testing
       if (email.toLowerCase() === 'admin@saascorp.com') {
-        const adminExists = mockUsers.find((u: any) => u.email.toLowerCase() === 'admin@saascorp.com');
+        const adminExists = mockUsers.find((u: MockUser) => u.email.toLowerCase() === 'admin@saascorp.com');
         if (!adminExists) {
           const defaultAdmin = {
             id: 'usr_admin',
@@ -216,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      const matchedUser = mockUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      const matchedUser = mockUsers.find((u: MockUser) => u.email.toLowerCase() === email.toLowerCase());
 
       if (!matchedUser) {
         throw new Error('Invalid credentials. User registry not found.');
@@ -242,8 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('subvault_auth_user', JSON.stringify(mockUser));
       setIsLoading(false);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
       setIsLoading(false);
       return false;
     }
@@ -298,9 +311,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const mockUsersRaw = localStorage.getItem('subvault_mock_users');
-      const mockUsers = mockUsersRaw ? JSON.parse(mockUsersRaw) : [];
+      const mockUsers: MockUser[] = mockUsersRaw ? JSON.parse(mockUsersRaw) : [];
 
-      const existingUser = mockUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      const existingUser = mockUsers.find((u: MockUser) => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
         throw new Error('Email registry conflict: Email already exists.');
       }
@@ -333,8 +346,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('subvault_auth_user', JSON.stringify(mockUser));
       setIsLoading(false);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Account registration failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Account registration failed');
       setIsLoading(false);
       return false;
     }
@@ -442,14 +455,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setIsLoading(false);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'OAuth authentication failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'OAuth authentication failed');
       setIsLoading(false);
       return false;
     }
   };
 
-  const forgotPassword = async (email: string): Promise<boolean> => {
+  const forgotPassword = async (_email: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -457,7 +470,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const resetPassword = async (password: string): Promise<boolean> => {
+  const resetPassword = async (_password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     await new Promise((resolve) => setTimeout(resolve, 800));

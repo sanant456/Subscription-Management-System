@@ -12,30 +12,22 @@ export const Signup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Password strength states
-  const [strength, setStrength] = useState<number>(0); // 0 to 4
-  const [strengthLabel, setStrengthLabel] = useState<string>('Empty');
-  const [strengthColor, setStrengthColor] = useState<string>('bg-gray-700');
-
   const { signup, loginWithOAuth, error, clearError } = useAuth();
   const navigate = useNavigate();
 
-  // Password strength logic
-  useEffect(() => {
-    if (!password) {
-      setStrength(0);
-      setStrengthLabel('Empty');
-      setStrengthColor('bg-gray-700');
-      return;
-    }
+  // Derived password strength
+  let strength = 0;
+  let strengthLabel = 'Empty';
+  let strengthColor = 'bg-gray-700';
 
+  if (password) {
     let score = 0;
     if (password.length >= 8) score++;
     if (/[A-Z]/.test(password)) score++;
     if (/[0-9]/.test(password)) score++;
     if (/[^A-Za-z0-9]/.test(password)) score++;
 
-    setStrength(score);
+    strength = score;
 
     const labels = ['Weak', 'Weak', 'Fair', 'Strong', 'Excellent'];
     const colors = [
@@ -46,9 +38,9 @@ export const Signup: React.FC = () => {
       'bg-emerald-500'
     ];
 
-    setStrengthLabel(labels[score]);
-    setStrengthColor(colors[score]);
-  }, [password]);
+    strengthLabel = labels[score];
+    strengthColor = colors[score];
+  }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +98,7 @@ export const Signup: React.FC = () => {
             <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-purple-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-purple-500/20">
               <span className="font-heading font-black text-xl text-white">A</span>
             </div>
-            <span className="font-heading font-bold text-2xl text-white">AchieveSub</span>
+            <span className="font-heading font-bold text-2xl text-white">SubVault</span>
           </Link>
           <span className="text-xs uppercase tracking-widest text-purple-400 font-bold flex items-center gap-1.5">
             <Sparkles className="h-3 w-3" /> Secure Auth Layer

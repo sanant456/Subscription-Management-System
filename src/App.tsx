@@ -9,6 +9,7 @@ import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ResetPassword } from './pages/auth/ResetPassword';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // A component to protect private dashboard routes
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,31 +37,33 @@ function App() {
       <AuthProvider>
         <SubscriptionProvider>
           <div className="min-h-screen text-gray-300">
-            <AnimatePresence mode="wait">
-              <Routes>
-                {/* Public Landing Route */}
-                <Route path="/" element={<LandingPage />} />
+            <ErrorBoundary>
+              <AnimatePresence mode="wait">
+                <Routes>
+                  {/* Public Landing Route */}
+                  <Route path="/" element={<LandingPage />} />
 
-                {/* Authentication Routes */}
-                <Route path="/auth/login" element={<Login />} />
-                <Route path="/auth/signup" element={<Signup />} />
-                <Route path="/auth/forgot" element={<ForgotPassword />} />
-                <Route path="/auth/reset" element={<ResetPassword />} />
+                  {/* Authentication Routes */}
+                  <Route path="/auth/login" element={<Login />} />
+                  <Route path="/auth/signup" element={<Signup />} />
+                  <Route path="/auth/forgot" element={<ForgotPassword />} />
+                  <Route path="/auth/reset" element={<ResetPassword />} />
 
-                {/* Protected Dashboard Route */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Protected Dashboard Route */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Fallback redirect to Landing */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AnimatePresence>
+                  {/* Fallback redirect to Landing */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </AnimatePresence>
+            </ErrorBoundary>
           </div>
         </SubscriptionProvider>
       </AuthProvider>

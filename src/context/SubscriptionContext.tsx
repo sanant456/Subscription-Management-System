@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useAuth } from './AuthContext';
 import { kaggleSubscriptions, kaggleInvoices } from '../data/kaggleDataset';
+import { getPlanPrice } from '../shared/pricing';
 
 export type SubscriptionStatus = 'Trialing' | 'Active' | 'Paused' | 'Past Due' | 'Cancelled' | 'Expired';
 export type PlanType = 'Basic' | 'Pro' | 'Enterprise';
@@ -63,7 +64,7 @@ interface SubscriptionContextType {
   deleteSubscription: (id: string) => void;
   clearLogs: () => void;
   addLog: (service: SystemLog['service'], message: string, type?: SystemLog['type']) => void;
-  triggerMockApi: (method: string, endpoint: string, body?: any) => any;
+  triggerMockApi: (method: string, endpoint: string, body?: any) => Promise<{ success: boolean; data?: any; error?: string }>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -190,12 +191,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   });
 
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>(initialLogs);
-  const [metrics, setMetrics] = useState<SubscriptionMetrics>({
-    mrr: 0,
-    activeUsers: 0,
-    churnRate: 0,
-    successRate: 0,
-  });
 
   // Filter subscriptions and invoices based on logged-in user role
   const filteredSubscriptions = React.useMemo(() => {
@@ -250,7 +245,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [token]);
 
   // Recalculate KPIs based on subscriptions
-  useEffect(() => {
+  const metrics = React.useMemo<SubscriptionMetrics>(() => {
     const activeSubs = filteredSubscriptions.filter(s => s.status === 'Active' || s.status === 'Trialing');
     
     // MRR calculation: Sum up amount normalized to monthly
@@ -271,12 +266,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const totalInvoices = filteredInvoices.length;
     const successRate = totalInvoices > 0 ? (paidCount / totalInvoices) * 100 : 100;
 
-    setMetrics({
+    return {
       mrr: Math.round(mrrTotal),
       activeUsers: activeSubs.length,
       churnRate: parseFloat(churn.toFixed(1)),
       successRate: parseFloat(successRate.toFixed(1)),
-    });
+    };
   }, [filteredSubscriptions, filteredInvoices]);
 
   // Handle Theme switching
@@ -291,18 +286,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const addLog = (service: SystemLog['service'], message: string, type: SystemLog['type'] = 'info') => {
+  function addLog(service: SystemLog['service'], message: string, type: SystemLog['type'] = 'info') {
     const now = new Date();
     const timestamp = now.toTimeString().split(' ')[0];
     const newLog: SystemLog = {
-      id: `log_${Math.random().toString(36).substr(2, 9)}`,
+      id: `log_${Math.random().toString(36).substring(2, 11)}`,
       timestamp,
       service,
       message,
       type,
     };
     setSystemLogs(prev => [newLog, ...prev].slice(0, 50)); // limit to 50 logs
-  };
+  }
 
   const clearLogs = () => setSystemLogs([]);
 
@@ -316,7 +311,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     if (token && !token.startsWith('mock_')) {
       try {
-        const fetchOptions: any = {
+        const fetchOptions: RequestInit = {
           method,
           headers: {
             'Content-Type': 'application/json',
@@ -342,9 +337,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           addLog('API Gateway', `Server returned error: ${res.error || 'Unknown error'}`, 'error');
           return { success: false, error: res.error || 'Server error' };
         }
-      } catch (e: any) {
-        addLog('API Gateway', `Connection error: ${e.message}`, 'error');
-        return { success: false, error: e.message || 'API Connection failure' };
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : 'API Connection failure';
+        addLog('API Gateway', `Connection error: ${errMsg}`, 'error');
+        return { success: false, error: errMsg };
       }
     }
 
@@ -398,8 +394,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const createSubscription = (email: string, plan: PlanType, interval: BillingInterval): Subscription => {
     addLog('Subscription Service', `Creating new subscription on plan "${plan}" (${interval}) for ${email}`, 'info');
     
-    const amounts = { Basic: 1500, Pro: 4000, Enterprise: 25000 };
-    const amount = interval === 'yearly' ? amounts[plan] * 10 : amounts[plan]; // 2 months discount
+    const amount = getPlanPrice(plan, interval);
 
     const subId = `sub_${Math.random().toString(36).substr(2, 8)}`;
     const userId = `usr_${Math.random().toString(36).substr(2, 5)}`;
@@ -474,7 +469,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       prev.map(s => {
         if (s.id !== id) return s;
         
-        let update: Partial<Subscription> = { status };
+        const update: Partial<Subscription> = { status };
         if (status === 'Trialing' && !s.trialDaysLeft) {
           update.trialDaysLeft = 14;
         } else if (status !== 'Trialing') {

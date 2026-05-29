@@ -8,34 +8,79 @@ import authRouter from './routes/auth';
 import subscriptionRouter from './routes/subscriptions';
 import adminRouter from './routes/admin';
 import stripeRouter from './routes/stripe';
+import razorpayRouter from './routes/razorpay';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5001;
 
+// ── Allowed Origins ────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:80',
+  'http://localhost',
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 // Setup HTTP Server & Socket.io
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // open CORS for development simplicity
+    origin: ALLOWED_ORIGINS,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
   }
 });
 
-// Configure Middlewares
-app.use(cors());
+// ── Rate Limiter (in-memory, per-IP) ───────────────────────────────────────────
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 100; // 100 requests per window
+
+const rateLimiter: express.RequestHandler = (req, res, next) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return next();
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    res.status(429).json({ success: false, error: 'Too many requests. Please try again later.' });
+    return;
+  }
+
+  entry.count++;
+  next();
+};
+
+// ── Configure Middlewares ──────────────────────────────────────────────────────
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json({
   verify: (req: any, res, buf) => {
     req.rawBody = buf;
   }
 }));
+app.use('/api', rateLimiter);
 
-// Bind API Routers
+// ── Bind API Routers ───────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
 app.use('/api/subscriptions', subscriptionRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/stripe', stripeRouter);
+app.use('/api/razorpay', razorpayRouter);
+
+// ── Health Check Endpoint (for Docker / k8s readiness probes) ──────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    memoryUsage: process.memoryUsage().rss,
+  });
+});
 
 // Base Check Route
 app.get('/', (req, res) => {
@@ -65,3 +110,4 @@ server.listen(port, () => {
   console.log(`🚀 Gateway Server running on http://localhost:${port}`);
   console.log(`🚀 WebSocket socket.io endpoint attached.`);
 });
+

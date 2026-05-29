@@ -18,6 +18,28 @@
       "email": "user@google.com",
       "password": "$2a$10$R.5RQ8O5bdGDmRn3WB1JeeJZC8UljjGElhwHNswMLQ52Z/807YDFi",
       "role": "USER"
+    },
+    {
+      "id": "usr_kn8hj8x",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-05-21T19:44:09.367Z",
+      "name": "Alex Carter",
+      "email": "alex.carter@gmail.com",
+      "password": "$2a$10$2HQswEe9Bgg7vf6YjkHMP.dsqC38xXjjaCdKQg3.whY3/dV/JneI2",
+      "role": "USER"
+    },
+    {
+      "id": "usr_9ko39ly",
+      "stripeCustomerId": "cus_rzp_ductz1b8",
+      "stripeSubscriptionId": "sub_mock_rzp_nqde56yt",
+      "subscriptionStatus": "active",
+      "createdAt": "2026-05-22T04:26:36.846Z",
+      "name": "Test Razorpay User 1779423996687",
+      "email": "user_rzp_1779423996687@gmail.com",
+      "password": "$2a$10$PfgXNrJuI7RedDwv7EhskONRlXypfhIT8TEvq56Uh6OVVIpuVid9u",
+      "role": "USER"
     }
   ],
   "subscriptions": [
@@ -32,6 +54,17 @@
       "trialDaysLeft": null,
       "createdAt": "2026-05-20T13:52:12.893Z",
       "nextBillingDate": "2026-06-19T13:52:12.893Z"
+    },
+    {
+      "createdAt": "2026-05-22T04:26:36.860Z",
+      "nextBillingDate": "2026-06-21T04:26:36.860Z",
+      "id": "sub_x0vvgauy",
+      "userId": "usr_9ko39ly",
+      "userEmail": "user_rzp_1779423996687@gmail.com",
+      "plan": "Pro",
+      "status": "Active",
+      "amount": 4000,
+      "interval": "monthly"
     }
   ],
   "invoices": [
@@ -44,6 +77,16 @@
       "amount": 49,
       "status": "Paid",
       "createdAt": "2026-05-20T13:52:12.893Z"
+    },
+    {
+      "id": "inv_f5m448bw",
+      "createdAt": "2026-05-22T04:26:36.861Z",
+      "subscriptionId": "sub_x0vvgauy",
+      "userId": "usr_9ko39ly",
+      "userEmail": "user_rzp_1779423996687@gmail.com",
+      "plan": "Pro",
+      "amount": 4000,
+      "status": "Paid"
     }
   ]
 }

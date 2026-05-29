@@ -58,7 +58,7 @@ export const ResetPassword: React.FC = () => {
             <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-purple-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-purple-500/20">
               <span className="font-heading font-black text-xl text-white">A</span>
             </div>
-            <span className="font-heading font-bold text-2xl text-white">AchieveSub</span>
+            <span className="font-heading font-bold text-2xl text-white">SubVault</span>
           </Link>
           <span className="text-xs uppercase tracking-widest text-purple-400 font-bold flex items-center gap-1.5">
             <Sparkles className="h-3 w-3" /> Secure Auth Layer

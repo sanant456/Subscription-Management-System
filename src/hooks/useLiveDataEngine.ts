@@ -6,7 +6,7 @@
  * feels like a real production system.
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import type {
   Subscription,
   Invoice,
@@ -15,6 +15,7 @@ import type {
   BillingInterval,
   SubscriptionStatus,
 } from '../context/SubscriptionContext';
+import { PLAN_PRICES } from '../shared/pricing';
 
 // ─── Realistic Indian startup email domains ───────────────────────────────────
 const EMAIL_DOMAINS = [
@@ -40,12 +41,7 @@ const LAST_NAMES = [
   'Pillai', 'Saxena', 'Chopra', 'Kapoor', 'Agarwal', 'Srivastava',
 ];
 
-// ─── Plan pricing in INR ─────────────────────────────────────────────────────
-const PLAN_PRICES: Record<PlanType, Record<BillingInterval, number>> = {
-  Basic:      { monthly: 1500,  yearly: 15000  },
-  Pro:        { monthly: 4000,  yearly: 40000  },
-  Enterprise: { monthly: 25000, yearly: 250000 },
-};
+
 
 // ─── System log message templates ────────────────────────────────────────────
 type Service = SystemLog['service'];
@@ -228,162 +224,15 @@ export interface LiveEngineCallbacks {
 
 export function useLiveDataEngine(callbacks: LiveEngineCallbacks, enabled = true) {
   const cbRef = useRef(callbacks);
-  cbRef.current = callbacks;
+  
+  useEffect(() => {
+    cbRef.current = callbacks;
+  });
 
-  // ── Ticker: new subscriber signs up every 8–18s ──────────────────────────
-  const scheduleNewSignup = useCallback(() => {
-    const delay = 8000 + Math.random() * 10000;
-    return setTimeout(() => {
-      if (!cbRef.current) return;
-      const plan   = randomFrom<PlanType>(['Basic', 'Pro', 'Enterprise']);
-      const interval = randomFrom<BillingInterval>(['monthly', 'yearly']);
-      const isTrialing = Math.random() < 0.25;
-      const sub = buildSubscription(plan, interval, isTrialing ? 'Trialing' : 'Active');
-      const inv = buildInvoice(sub, isTrialing ? 'Unpaid' : 'Paid');
-
-      cbRef.current.addSubscription(sub);
-      cbRef.current.addInvoice(inv);
-      cbRef.current.addLog(
-        'Subscription Service',
-        `🆕 New ${plan} subscription created for ${sub.userEmail} (${interval})`,
-        'success',
-      );
-      cbRef.current.addLog(
-        'Billing Service',
-        isTrialing
-          ? `Trial started for ${sub.userEmail} — first charge on ${sub.nextBillingDate}`
-          : `Payment of ₹${sub.amount.toLocaleString()} captured via Razorpay for ${sub.userEmail}`,
-        isTrialing ? 'info' : 'success',
-      );
-      cbRef.current.addLog(
-        'RabbitMQ',
-        `"subscription.created" event emitted → analytics + email worker queues`,
-        'info',
-      );
-    }, delay);
-  }, []);
-
-  // ── Ticker: payment event every 12–25s ───────────────────────────────────
-  const schedulePaymentEvent = useCallback(() => {
-    const delay = 12000 + Math.random() * 13000;
-    return setTimeout(() => {
-      const subs = cbRef.current.getSubscriptions();
-      const activeSubs = subs.filter(s => s.status === 'Active' || s.status === 'Trialing');
-      if (activeSubs.length === 0) return;
-
-      const sub = randomFrom(activeSubs);
-      const success = Math.random() < 0.88; // 88% success rate
-
-      const inv = buildInvoice(sub, success ? 'Paid' : 'Failed');
-      cbRef.current.addInvoice(inv);
-
-      if (success) {
-        cbRef.current.addLog(
-          'Billing Service',
-          `✅ Recurring charge ₹${sub.amount.toLocaleString()} captured for ${sub.userEmail}`,
-          'success',
-        );
-        cbRef.current.addLog('PostgreSQL', `Invoice ${inv.id} status → Paid`, 'success');
-      } else {
-        cbRef.current.updateSubStatus(sub.id, 'Past Due');
-        cbRef.current.addLog(
-          'Billing Service',
-          `❌ Payment FAILED for ${sub.userEmail} — card declined (code: insufficient_funds)`,
-          'error',
-        );
-        cbRef.current.addLog(
-          'RabbitMQ',
-          `"dunning.retry" event queued for ${sub.userEmail} — attempt 1/3 in 24h`,
-          'warn',
-        );
-      }
-    }, delay);
-  }, []);
-
-  // ── Ticker: plan upgrade every 20–35s ────────────────────────────────────
-  const schedulePlanUpgrade = useCallback(() => {
-    const delay = 20000 + Math.random() * 15000;
-    return setTimeout(() => {
-      const subs = cbRef.current.getSubscriptions();
-      const basicSubs = subs.filter(s => s.plan === 'Basic' && s.status === 'Active');
-      if (basicSubs.length === 0) return;
-
-      const sub = randomFrom(basicSubs);
-      const newPlan: PlanType = Math.random() < 0.7 ? 'Pro' : 'Enterprise';
-      const interval = sub.interval;
-      const newAmount = PLAN_PRICES[newPlan][interval];
-
-      cbRef.current.addLog(
-        'Subscription Service',
-        `⬆️ Plan upgrade: ${sub.userEmail} → ${newPlan} (${interval})`,
-        'info',
-      );
-      cbRef.current.addLog(
-        'Billing Service',
-        `Proration calculated — ₹${newAmount.toLocaleString()} charged for ${newPlan}`,
-        'success',
-      );
-    }, delay);
-  }, []);
-
-  // ── Ticker: cancellation / churn every 25–45s ─────────────────────────────
-  const scheduleCancellation = useCallback(() => {
-    const delay = 25000 + Math.random() * 20000;
-    return setTimeout(() => {
-      const subs = cbRef.current.getSubscriptions();
-      const activeSubs = subs.filter(s => s.status === 'Active');
-      if (activeSubs.length < 4) return; // keep minimum 3 active
-
-      const sub = randomFrom(activeSubs);
-      cbRef.current.updateSubStatus(sub.id, 'Cancelled');
-      cbRef.current.addLog(
-        'Subscription Service',
-        `🔴 Cancellation processed for ${sub.userEmail} (${sub.plan} plan)`,
-        'warn',
-      );
-      cbRef.current.addLog(
-        'RabbitMQ',
-        `"subscription.cancelled" event dispatched → retention + offboarding workers`,
-        'info',
-      );
-    }, delay);
-  }, []);
-
-  // ── Ticker: background system health pulses every 4–9s ───────────────────
-  const scheduleSystemLog = useCallback(() => {
-    const delay = 4000 + Math.random() * 5000;
-    return setTimeout(() => {
-      const { service, message, type } = randomLogEntry();
-      cbRef.current.addLog(service, message, type);
-    }, delay);
-  }, []);
-
-  // ── Master loop: re-schedule each timer after it fires ───────────────────
   useEffect(() => {
     if (!enabled) return;
 
-    let timers: ReturnType<typeof setTimeout>[] = [];
-    let stopped = false;
-
-    // We re-arm each timer recursively so events keep firing indefinitely.
-    const arm = (factory: () => ReturnType<typeof setTimeout>) => {
-      const t = factory();
-      timers.push(t);
-      // When this timer fires, re-arm it (simulate infinite loop without setInterval drift)
-      const wrapped = () => {
-        if (stopped) return;
-        timers = timers.filter(x => x !== t);
-        arm(factory);
-      };
-      // Piggyback a re-arm onto the existing timeout via clearTimeout + new timeout trick
-      clearTimeout(t);
-      const newT = setTimeout(() => {
-        if (stopped) return;
-        // Execute original factory logic (already created the effect)
-        arm(factory);
-      }, /* same delay logic handled inside factory */ 100);
-      timers.push(newT);
-    };
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
     // Actually just use proper recurring wrappers:
     const loop = (fn: () => void, minMs: number, maxMs: number) => {
@@ -485,7 +334,6 @@ export function useLiveDataEngine(callbacks: LiveEngineCallbacks, enabled = true
     }, 35000, 60000);
 
     return () => {
-      stopped = true;
       timers.forEach(clearTimeout);
     };
   }, [enabled]);
