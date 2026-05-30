@@ -1018,7 +1018,7 @@ export const CheckoutPage: React.FC = () => {
                     {/* Left: QR Code container */}
                     <div className="relative p-4 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-purple-500/5">
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiUrl)}`}
+                        src={`https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8`}
                         alt="UPI QR Code"
                         className="h-[180px] w-[180px]"
                       />
