@@ -223,6 +223,8 @@ export const Dashboard: React.FC = () => {
     }
   }, [token, addLog]);
 
+  const navigate = useNavigate();
+
   const handleCreateSub = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
@@ -236,137 +238,8 @@ export const Dashboard: React.FC = () => {
       setNewEmail('');
       addLog('Subscription Service', `Created new subscription from Dashboard Form: ${newEmail}`, 'success');
     } else {
-      setCheckoutLoading(true);
-      try {
-        if (paymentGateway === 'stripe') {
-          const response = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ plan: newPlan, interval: newInterval })
-          }).catch(() => null);
-          const data = response ? await response.json() : null;
-          if (data && data.success && data.url) {
-            addLog('Billing Service', `Redirecting to Stripe checkout for ${newPlan} (${newInterval})`, 'info');
-            window.location.href = data.url;
-          } else {
-            // Frontend Fallback Mode
-            addLog('Billing Service', `Offline Mode: Initiating client-side Stripe checkout simulation for ${newPlan} (${newInterval})`, 'info');
-            window.location.href = `/dashboard?mock_checkout=true&plan=${newPlan}&interval=${newInterval}`;
-          }
-        } else {
-          // Razorpay checkout flow
-          const response = await fetch('/api/razorpay/create-subscription', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ plan: newPlan, interval: newInterval })
-          });
-          const data = await response.json();
-          if (!data.success) {
-            setFormError(data.error || 'Failed to generate Razorpay subscription.');
-            return;
-          }
-
-          if (data.mock) {
-            // Open mock custom modal overlay
-            setRazorpayCheckoutData({
-              amount: data.amount,
-              plan: data.plan,
-              interval: data.interval,
-              subscriptionId: data.subscriptionId,
-              mock: true
-            });
-            setIsRazorpayModalOpen(true);
-          } else {
-            // Load Razorpay script dynamically & launch checkout
-            const scriptLoaded = await loadRazorpayScript();
-            if (!scriptLoaded) {
-              setFormError('Failed to load Razorpay Checkout SDK. Check your network.');
-              return;
-            }
-
-            const options = {
-              key: data.keyId,
-              subscription_id: data.subscriptionId,
-              name: 'SubVault',
-              description: `${data.plan} Subscription (${data.interval})`,
-              image: 'https://cdn.pixabay.com/photo/2016/09/20/07/25/arrow-1681944_1280.png',
-              handler: async function (paymentRes: {
-                razorpay_payment_id: string;
-                razorpay_subscription_id: string;
-                razorpay_signature: string;
-              }) {
-                try {
-                  setCheckoutLoading(true);
-                  addLog('Billing Service', `Verifying live Razorpay subscription: ${paymentRes.razorpay_subscription_id}`, 'info');
-                  const verifyRes = await fetch('/api/razorpay/verify-subscription', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                      razorpay_payment_id: paymentRes.razorpay_payment_id,
-                      razorpay_subscription_id: paymentRes.razorpay_subscription_id,
-                      razorpay_signature: paymentRes.razorpay_signature,
-                      plan: data.plan,
-                      interval: data.interval
-                    })
-                  });
-                  const verifyData = await verifyRes.json();
-                  if (verifyData.success) {
-                    addLog('Subscription Service', 'Razorpay subscription activated successfully!', 'success');
-                    confetti({
-                      particleCount: 150,
-                      spread: 80,
-                      origin: { y: 0.6 }
-                    });
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 1000);
-                  } else {
-                    setFormError(verifyData.error || 'Live signature verification failed.');
-                  }
-                } catch (err) {
-                  const errMsg = err instanceof Error ? err.message : 'Live signature verification connection failed.';
-                  setFormError(errMsg);
-                } finally {
-                  setCheckoutLoading(false);
-                }
-              },
-              prefill: {
-                name: user?.name || '',
-                email: user?.email || '',
-                contact: '9999999999'
-              },
-              theme: {
-                color: '#a78bfa'
-              }
-            };
-            const rzp = new (window as unknown as { 
-              Razorpay: new (opts: unknown) => { 
-                on: (event: string, cb: (res: { error: { description: string } }) => void) => void; 
-                open: () => void 
-              } 
-            }).Razorpay(options);
-            rzp.on('payment.failed', function (resp: { error: { description: string } }) {
-              addLog('Billing Service', `Razorpay subscription payment failed: ${resp.error.description}`, 'error');
-              setFormError(`Payment failed: ${resp.error.description}`);
-            });
-            rzp.open();
-          }
-        }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : 'Error connecting to billing service.';
-        setFormError(errMsg);
-      } finally {
-        setCheckoutLoading(false);
-      }
+      // Navigate to dedicated checkout page
+      navigate(`/checkout?plan=${newPlan}&interval=${newInterval}`);
     }
   };
 

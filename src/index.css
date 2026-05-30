@@ -147,3 +147,56 @@ body {
 .glow-dot {
   box-shadow: 0 0 12px currentColor;
 }
+
+/* Checkout Page — Animated border glow */
+@keyframes checkout-glow {
+  0%, 100% {
+    opacity: 0.4;
+    filter: blur(20px);
+  }
+  50% {
+    opacity: 0.8;
+    filter: blur(30px);
+  }
+}
+
+.animate-checkout-glow {
+  animation: checkout-glow 4s ease-in-out infinite;
+}
+
+/* Checkout Step Progress Indicator */
+.step-indicator {
+  position: relative;
+}
+
+.step-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.step-indicator.active::after {
+  opacity: 1;
+}
+
+/* Checkout card shimmer effect */
+@keyframes checkout-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.checkout-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+  animation: checkout-shimmer 3s infinite;
+}

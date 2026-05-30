@@ -65,29 +65,8 @@ export const LandingPage: React.FC = () => {
   const handleSelectPlan = async (plan: PlanType) => {
     setCheckoutError(null);
     if (token) {
-      setCheckoutLoadingPlan(plan);
-      try {
-        const response = await fetch('/api/stripe/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ plan, interval: billingInterval })
-        }).catch(() => null);
-
-        const data = response ? await response.json() : null;
-        if (data && data.success && data.url) {
-          window.location.href = data.url;
-        } else {
-          // Fallback to mock simulation directly in the client if backend is down
-          window.location.href = `/dashboard?mock_checkout=true&plan=${plan}&interval=${billingInterval}`;
-        }
-      } catch (err) {
-        window.location.href = `/dashboard?mock_checkout=true&plan=${plan}&interval=${billingInterval}`;
-      } finally {
-        setCheckoutLoadingPlan(null);
-      }
+      // Navigate to dedicated checkout page
+      navigate(`/checkout?plan=${plan}&interval=${billingInterval}`);
     } else {
       // Save pending checkout config
       localStorage.setItem('pending_checkout_selection', JSON.stringify({ plan, interval: billingInterval }));

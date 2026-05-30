@@ -43,7 +43,8 @@ async function getOrCreatePriceId(stripeInstance: any, plan: string, interval: '
   const priceList = await stripeInstance.prices.list({ product: product.id, limit: 100 });
   let price = priceList.data.find((p: any) => 
     p.recurring?.interval === (interval === 'yearly' ? 'year' : 'month') && 
-    p.unit_amount === amount * 100
+    p.unit_amount === amount * 100 &&
+    p.currency.toLowerCase() === 'inr'
   );
   
   if (!price) {
@@ -103,6 +104,8 @@ router.post('/create-checkout-session', authenticateToken, async (req: AuthReque
         });
       }
 
+      const origin = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173';
+
       // Get or create price reference
       const priceId = await getOrCreatePriceId(stripe, plan, interval, amount);
 
@@ -112,8 +115,8 @@ router.post('/create-checkout-session', authenticateToken, async (req: AuthReque
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
-        success_url: `${req.headers.origin}/dashboard?checkout_status=success&plan=${plan}&interval=${interval}`,
-        cancel_url: `${req.headers.origin}/dashboard?checkout_status=cancel`,
+        success_url: `${origin}/dashboard?checkout_status=success&plan=${plan}&interval=${interval}`,
+        cancel_url: `${origin}/dashboard?checkout_status=cancel`,
         metadata: {
           userId: user.id,
           userEmail: user.email,
@@ -126,7 +129,8 @@ router.post('/create-checkout-session', authenticateToken, async (req: AuthReque
       return res.json({ success: true, url: session.url });
     } else {
       // Mock Checkout URL fallback
-      const mockCheckoutUrl = `${req.headers.origin}/dashboard?mock_checkout=true&plan=${plan}&interval=${interval}`;
+      const origin = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173';
+      const mockCheckoutUrl = `${origin}/dashboard?mock_checkout=true&plan=${plan}&interval=${interval}`;
       return res.json({ success: true, url: mockCheckoutUrl });
     }
   } catch (error: any) {

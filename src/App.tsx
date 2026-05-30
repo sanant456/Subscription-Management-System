@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
@@ -48,6 +49,16 @@ function App() {
                   <Route path="/auth/signup" element={<Signup />} />
                   <Route path="/auth/forgot" element={<ForgotPassword />} />
                   <Route path="/auth/reset" element={<ResetPassword />} />
+
+                  {/* Protected Checkout Route */}
+                  <Route
+                    path="/checkout"
+                    element={
+                      <ProtectedRoute>
+                        <CheckoutPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Protected Dashboard Route */}
                   <Route
