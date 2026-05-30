@@ -148,9 +148,10 @@ export const CheckoutPage: React.FC = () => {
     return { subtotal, gst, total };
   }, [selectedPlan, billingInterval]);
 
-  const upiId = import.meta.env.VITE_UPI_ID || 'anantsingh@upi';
+  const upiId = import.meta.env.VITE_UPI_ID || '9752146879@paytm';
   const upiName = import.meta.env.VITE_UPI_NAME || 'Anant Singh';
-  const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${pricing.total}&cu=INR&tn=${encodeURIComponent(selectedPlan + ' ' + billingInterval + ' SubVault')}`;
+  // Note: We omit the '&am=' amount parameter for personal UPI IDs to ensure scanning always works in Google Pay, PhonePe, and Paytm.
+  const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&cu=INR&tn=${encodeURIComponent(selectedPlan + ' ' + billingInterval + ' SubVault')}`;
 
 
   // ── Razorpay Script Loader ──────────────────────────────────────────────
@@ -1061,6 +1062,18 @@ export const CheckoutPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Informative Tip Box */}
+                  <div className="p-4 rounded-xl border border-yellow-500/20 bg-yellow-950/10 text-yellow-200 text-xs flex gap-2.5">
+                    <Sparkles className="h-4 w-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold mb-1">Important Scanner Tip</p>
+                      <p className="text-gray-400 leading-relaxed">
+                        Since this is a personal UPI ID, security settings in apps like Google Pay, PhonePe, and Paytm may prevent automatic amount pre-filling. Please manually enter the exact amount <strong className="text-emerald-400 font-bold">₹{pricing.total.toLocaleString('en-IN')}</strong> inside your UPI app to complete the transaction.
+                      </p>
+                    </div>
+                  </div>
+
 
                   {/* UTR Input Form */}
                   <div className="glass-panel rounded-xl p-5 border border-white/5 space-y-4">
