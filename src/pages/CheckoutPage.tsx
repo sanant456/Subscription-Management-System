@@ -23,6 +23,7 @@ import type { PlanType, BillingInterval } from '../context/SubscriptionContext';
 import { PLAN_PRICES, getPlanDisplayPrice } from '../shared/pricing';
 import { MockRazorpayModal } from '../components/MockRazorpayModal';
 import confetti from 'canvas-confetti';
+import { QRCodeSVG } from 'qrcode.react';
 
 // ── Plan Feature Lists ─────────────────────────────────────────────────────────
 const PLAN_FEATURES: Record<PlanType, { included: string[]; excluded: string[] }> = {
@@ -1017,10 +1018,12 @@ export const CheckoutPage: React.FC = () => {
                   <div className="flex flex-col md:flex-row gap-6 items-center glass-panel rounded-xl p-6 border border-white/5 bg-black/20">
                     {/* Left: QR Code container */}
                     <div className="relative p-4 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-purple-500/5">
-                      <img
-                        src={`https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8`}
-                        alt="UPI QR Code"
-                        className="h-[180px] w-[180px]"
+                      <QRCodeSVG
+                        value={upiUrl}
+                        size={180}
+                        bgColor="#ffffff"
+                        fgColor="#000000"
+                        level="L"
                       />
                     </div>
 
