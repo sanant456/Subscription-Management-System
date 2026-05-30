@@ -149,7 +149,7 @@ export const CheckoutPage: React.FC = () => {
     return { subtotal, gst, total };
   }, [selectedPlan, billingInterval]);
 
-  const upiId = import.meta.env.VITE_UPI_ID || '9752146879@paytm';
+  const upiId = import.meta.env.VITE_UPI_ID || '9752146879@ptaxis';
   const upiName = import.meta.env.VITE_UPI_NAME || 'Anant Singh';
   // Note: We omit the '&am=' amount parameter for personal UPI IDs to ensure scanning always works in Google Pay, PhonePe, and Paytm.
   const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&cu=INR&tn=${encodeURIComponent(selectedPlan + ' ' + billingInterval + ' SubVault')}`;
