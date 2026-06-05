@@ -40,6 +40,204 @@
       "email": "user_rzp_1779423996687@gmail.com",
       "password": "$2a$10$PfgXNrJuI7RedDwv7EhskONRlXypfhIT8TEvq56Uh6OVVIpuVid9u",
       "role": "USER"
+    },
+    {
+      "id": "usr_9blfho0",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:23:43.899Z",
+      "name": "Test User",
+      "email": "test@example.com",
+      "password": "$2a$10$ZO84kAQE533XALgke/Wb0OsFLXzDrGfUpOmUgocoJakpzggFiN9y2",
+      "role": "USER"
+    },
+    {
+      "id": "usr_ns2p0uz",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:24:22.951Z",
+      "name": "Admin Test",
+      "email": "admin_test@saasflow.com",
+      "password": "$2a$10$znQwteXPxnOewM.RHlh9GOgS8hp..5zvLrLUg54mpigMwHqcWL9je",
+      "role": "ADMIN"
+    },
+    {
+      "id": "usr_lq8viph",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:02.061Z",
+      "name": "API Test User",
+      "email": "pw_api_1780419061938@example.com",
+      "password": "$2a$10$xIvBEfIRr1U94DbA2Z89U.za8j8SCnVfvleRyXnFr1dHPWTJpR7iG",
+      "role": "USER"
+    },
+    {
+      "id": "usr_bop3kkn",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:02.394Z",
+      "name": "Sub Test User",
+      "email": "pw_sub_1780419061938@example.com",
+      "password": "$2a$10$kqbobg8hyDmc1c7Iullcf.DvEIjjG6adpQPZn9Afe29f8WLTZiVSW",
+      "role": "USER"
+    },
+    {
+      "id": "usr_pqsxpw0",
+      "stripeCustomerId": "cus_mock_mlcv7ril",
+      "stripeSubscriptionId": "sub_qr_ma4fwzwi",
+      "subscriptionStatus": "active",
+      "createdAt": "2026-06-02T16:51:02.548Z",
+      "name": "Payment Tester",
+      "email": "pw_pay_1780419061938@example.com",
+      "password": "$2a$10$S3a5M9XaCs3/0Bro2XyHs.gnjxKVbamZS8bm9fW9zyKCJ6uhV5sTW",
+      "role": "USER"
+    },
+    {
+      "id": "usr_33qzxga",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:02.656Z",
+      "name": "Admin Tester",
+      "email": "pw_admin_1780419061938@admin.com",
+      "password": "$2a$10$0COmmG8FD85r.A.WLrpEN.dQENs851wW0TuamZxmSH4oAguZ/CZOm",
+      "role": "ADMIN"
+    },
+    {
+      "id": "usr_lyjt100",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:02.756Z",
+      "name": "Regular User",
+      "email": "pw_nonadmin_1780419061938@example.com",
+      "password": "$2a$10$O9Qt6rYE/bmNw2uJyBjHvebKdd2zJENb4.aog0UdunegaG88zqCo2",
+      "role": "ADMIN"
+    },
+    {
+      "id": "usr_o63i927",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:03.110Z",
+      "name": "Admin Tester",
+      "email": "pw_admin_1780419063012@admin.com",
+      "password": "$2a$10$BXvxrto0.goCu/6YCsLHT.uWcp5Jq7Utm5OLqidmLt/XMQL3IJS0G",
+      "role": "ADMIN"
+    },
+    {
+      "id": "usr_obpcyoa",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:19.382Z",
+      "name": "Playwright Test User",
+      "email": "pw_test_1780419075850@example.com",
+      "password": "$2a$10$J.avW3t2EuCrIoFzrSZuf.ng6b1yMapWfSsgwAF0F2zFvycRTFx.S",
+      "role": "USER"
+    },
+    {
+      "id": "usr_0d0s1dz",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T16:51:54.678Z",
+      "name": "Dashboard Tester",
+      "email": "pw_dash_1780419113467@example.com",
+      "password": "$2a$10$LHx8yvLt9OZYbsyg3OQt9.F6oC.tN5bVW/Hj5FAfAdFwLU77KYrLm",
+      "role": "USER"
+    },
+    {
+      "id": "usr_991c73h",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:06:37.756Z",
+      "name": "API Test User",
+      "email": "pw_api_1780419997635@example.com",
+      "password": "$2a$10$uD9nsrwGBsN0T3DmrDbVAOaM/sUmiIi.x6u70wehnXA04s378nQBG",
+      "role": "USER"
+    },
+    {
+      "id": "usr_5bwme7t",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:06:38.080Z",
+      "name": "Sub Test User",
+      "email": "pw_sub_1780419997635@example.com",
+      "password": "$2a$10$jLwzzwzx8XdwqDfbvw.rsOqE0JBxKEXM3wQQUkP9IHGBpz5Aflcgq",
+      "role": "USER"
+    },
+    {
+      "id": "usr_4t2yzlb",
+      "stripeCustomerId": "cus_mock_qgs70oun",
+      "stripeSubscriptionId": "sub_qr_tbwt72gr",
+      "subscriptionStatus": "active",
+      "createdAt": "2026-06-02T17:06:38.233Z",
+      "name": "Payment Tester",
+      "email": "pw_pay_1780419997635@example.com",
+      "password": "$2a$10$GBSHcH20Nh9Q9QPPyCoFF.8u4LmBPAFguTZqBZ0gIKCOvZHR/daGC",
+      "role": "USER"
+    },
+    {
+      "id": "usr_q9ukjdn",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:06:38.342Z",
+      "name": "Admin Tester",
+      "email": "pw_admin_1780419997635@admin.com",
+      "password": "$2a$10$Pp8xH8u2UzA6mcFeo5PSQ./x/yDud73MthZiNY7S.Wp0Pe4u.do4u",
+      "role": "ADMIN"
+    },
+    {
+      "id": "usr_tchlqzx",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:06:38.441Z",
+      "name": "Regular User",
+      "email": "pw_user_1780419997635@example.com",
+      "password": "$2a$10$NLAEJQh2OBFledUoPBf9tOxDztf6gwbZkqq16c6Y6Gh30rGQjSftO",
+      "role": "USER"
+    },
+    {
+      "id": "usr_or31s51",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:06:46.922Z",
+      "name": "Playwright Test User",
+      "email": "pw_test_1780419998459@example.com",
+      "password": "$2a$10$vKy2LNnW3NUnrUWMX4z1G.eqpWnAAfEROXQsdsetSa7oXQuHF61IW",
+      "role": "USER"
+    },
+    {
+      "id": "usr_e7vou1b",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:06:48.316Z",
+      "name": "Login Test User",
+      "email": "pw_login_1780419998460@example.com",
+      "password": "$2a$10$9Pnf8ExwyP0r9HwdZRw7O.ax4.loQxWRIOZ.NnvwVFq0wSkH3CJb2",
+      "role": "USER"
+    },
+    {
+      "id": "usr_w33yamm",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-02T17:07:00.794Z",
+      "name": "Dashboard Tester",
+      "email": "pw_dash_1780420019869@example.com",
+      "password": "$2a$10$YTkDtLYSA7s/61IS6634R.fyWZXFet8BieGC6gjTjGaO0VOWNiV3e",
+      "role": "USER"
     }
   ],
   "subscriptions": [
@@ -65,6 +263,105 @@
       "status": "Active",
       "amount": 4000,
       "interval": "monthly"
+    },
+    {
+      "createdAt": "2026-06-02T16:24:09.118Z",
+      "nextBillingDate": "2026-07-02T16:24:09.118Z",
+      "id": "sub_c8706wj3",
+      "userId": "usr_9blfho0",
+      "userEmail": "test@example.com",
+      "plan": "Pro",
+      "status": "Active",
+      "amount": 4000,
+      "interval": "monthly"
+    },
+    {
+      "createdAt": "2026-06-02T16:51:02.409Z",
+      "nextBillingDate": "2027-06-02T16:51:02.449Z",
+      "id": "sub_jpol7uwy",
+      "userId": "usr_bop3kkn",
+      "userEmail": "pw_sub_1780419061938@example.com",
+      "plan": "Enterprise",
+      "status": "Paused",
+      "amount": 250000,
+      "interval": "yearly"
+    },
+    {
+      "createdAt": "2026-06-02T16:51:02.560Z",
+      "nextBillingDate": "2027-06-02T16:51:02.560Z",
+      "id": "sub_2v437whs",
+      "userId": "usr_pqsxpw0",
+      "userEmail": "pw_pay_1780419061938@example.com",
+      "plan": "Enterprise",
+      "status": "Active",
+      "amount": 250000,
+      "interval": "yearly"
+    },
+    {
+      "createdAt": "2026-06-02T16:51:02.573Z",
+      "nextBillingDate": "2026-07-02T16:51:02.573Z",
+      "id": "sub_457finx2",
+      "userId": "usr_pqsxpw0",
+      "userEmail": "pw_pay_1780419061938@example.com",
+      "plan": "Pro",
+      "status": "Active",
+      "amount": 4000,
+      "interval": "monthly"
+    },
+    {
+      "createdAt": "2026-06-02T16:51:02.581Z",
+      "nextBillingDate": "2026-07-02T16:51:02.581Z",
+      "id": "sub_qr_ma4fwzwi",
+      "userId": "usr_pqsxpw0",
+      "userEmail": "pw_pay_1780419061938@example.com",
+      "plan": "Basic",
+      "status": "Active",
+      "amount": 1500,
+      "interval": "monthly"
+    },
+    {
+      "createdAt": "2026-06-02T17:06:38.093Z",
+      "nextBillingDate": "2027-06-02T17:06:38.130Z",
+      "id": "sub_lbcquq9o",
+      "userId": "usr_5bwme7t",
+      "userEmail": "pw_sub_1780419997635@example.com",
+      "plan": "Enterprise",
+      "status": "Paused",
+      "amount": 250000,
+      "interval": "yearly"
+    },
+    {
+      "createdAt": "2026-06-02T17:06:38.246Z",
+      "nextBillingDate": "2027-06-02T17:06:38.246Z",
+      "id": "sub_4w9l98",
+      "userId": "usr_4t2yzlb",
+      "userEmail": "pw_pay_1780419997635@example.com",
+      "plan": "Enterprise",
+      "status": "Active",
+      "amount": 250000,
+      "interval": "yearly"
+    },
+    {
+      "createdAt": "2026-06-02T17:06:38.258Z",
+      "nextBillingDate": "2026-07-02T17:06:38.258Z",
+      "id": "sub_165dref1",
+      "userId": "usr_4t2yzlb",
+      "userEmail": "pw_pay_1780419997635@example.com",
+      "plan": "Pro",
+      "status": "Active",
+      "amount": 4000,
+      "interval": "monthly"
+    },
+    {
+      "createdAt": "2026-06-02T17:06:38.266Z",
+      "nextBillingDate": "2026-07-02T17:06:38.266Z",
+      "id": "sub_qr_tbwt72gr",
+      "userId": "usr_4t2yzlb",
+      "userEmail": "pw_pay_1780419997635@example.com",
+      "plan": "Basic",
+      "status": "Active",
+      "amount": 1500,
+      "interval": "monthly"
     }
   ],
   "invoices": [
@@ -86,6 +383,116 @@
       "userEmail": "user_rzp_1779423996687@gmail.com",
       "plan": "Pro",
       "amount": 4000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_9fgiv5j6",
+      "createdAt": "2026-06-02T16:24:09.119Z",
+      "subscriptionId": "sub_c8706wj3",
+      "userId": "usr_9blfho0",
+      "userEmail": "test@example.com",
+      "plan": "Pro",
+      "amount": 4000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_hrwzpk8t",
+      "createdAt": "2026-06-02T16:51:02.409Z",
+      "subscriptionId": "sub_jpol7uwy",
+      "userId": "usr_bop3kkn",
+      "userEmail": "pw_sub_1780419061938@example.com",
+      "plan": "Pro",
+      "amount": 4000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_rlab1o5g",
+      "createdAt": "2026-06-02T16:51:02.450Z",
+      "subscriptionId": "sub_jpol7uwy",
+      "userId": "usr_bop3kkn",
+      "userEmail": "pw_sub_1780419061938@example.com",
+      "plan": "Enterprise",
+      "amount": 246000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_tow2mvxl",
+      "createdAt": "2026-06-02T16:51:02.560Z",
+      "subscriptionId": "sub_2v437whs",
+      "userId": "usr_pqsxpw0",
+      "userEmail": "pw_pay_1780419061938@example.com",
+      "plan": "Enterprise",
+      "amount": 250000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_zu0w3ghe",
+      "createdAt": "2026-06-02T16:51:02.573Z",
+      "subscriptionId": "sub_457finx2",
+      "userId": "usr_pqsxpw0",
+      "userEmail": "pw_pay_1780419061938@example.com",
+      "plan": "Pro",
+      "amount": 4000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_qr_tjyq19w3",
+      "createdAt": "2026-06-02T16:51:02.582Z",
+      "subscriptionId": "sub_qr_ma4fwzwi",
+      "userId": "usr_pqsxpw0",
+      "userEmail": "pw_pay_1780419061938@example.com",
+      "plan": "Basic",
+      "amount": 1770,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_hcx37vzw",
+      "createdAt": "2026-06-02T17:06:38.094Z",
+      "subscriptionId": "sub_lbcquq9o",
+      "userId": "usr_5bwme7t",
+      "userEmail": "pw_sub_1780419997635@example.com",
+      "plan": "Pro",
+      "amount": 4000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_6x3d2uki",
+      "createdAt": "2026-06-02T17:06:38.130Z",
+      "subscriptionId": "sub_lbcquq9o",
+      "userId": "usr_5bwme7t",
+      "userEmail": "pw_sub_1780419997635@example.com",
+      "plan": "Enterprise",
+      "amount": 246000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_932ah7nv",
+      "createdAt": "2026-06-02T17:06:38.246Z",
+      "subscriptionId": "sub_4w9l98",
+      "userId": "usr_4t2yzlb",
+      "userEmail": "pw_pay_1780419997635@example.com",
+      "plan": "Enterprise",
+      "amount": 250000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_6nm8qw92",
+      "createdAt": "2026-06-02T17:06:38.258Z",
+      "subscriptionId": "sub_165dref1",
+      "userId": "usr_4t2yzlb",
+      "userEmail": "pw_pay_1780419997635@example.com",
+      "plan": "Pro",
+      "amount": 4000,
+      "status": "Paid"
+    },
+    {
+      "id": "inv_qr_frz8iwut",
+      "createdAt": "2026-06-02T17:06:38.267Z",
+      "subscriptionId": "sub_qr_tbwt72gr",
+      "userId": "usr_4t2yzlb",
+      "userEmail": "pw_pay_1780419997635@example.com",
+      "plan": "Basic",
+      "amount": 1770,
       "status": "Paid"
     }
   ]

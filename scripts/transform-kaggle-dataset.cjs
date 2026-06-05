@@ -159,8 +159,8 @@ ${invLines}
 ];
 `;
 
-  const outPath = path.join(__dirname, 'src', 'data', 'kaggleDataset.ts');
-  require('fs').mkdirSync(path.join(__dirname, 'src', 'data'), { recursive: true });
+  const outPath = path.join(__dirname, '..', 'src', 'data', 'kaggleDataset.ts');
+  require('fs').mkdirSync(path.dirname(outPath), { recursive: true });
   require('fs').writeFileSync(outPath, output, 'utf8');
   console.log(`\n✅ Written ${subscriptions.length} subscriptions + ${invoices.length} invoices to:\n   ${outPath}`);
 

@@ -110,7 +110,7 @@ export const Signup: React.FC = () => {
           <h2 className="text-2xl font-bold font-heading text-white mb-1 text-center">Create Your Account</h2>
           <p className="text-gray-400 text-xs text-center mb-5">Start your 14-day free trial on us.</p>
 
-          <form onSubmit={handleSignup} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4" noValidate>
             {/* Input Name */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-gray-400">Full Name</label>

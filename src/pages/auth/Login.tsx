@@ -77,7 +77,7 @@ export const Login: React.FC = () => {
           <h2 className="text-2xl font-bold font-heading text-white mb-1.5 text-center">Welcome Back</h2>
           <p className="text-gray-400 text-xs text-center mb-6">Enter your details to manage subscription assets.</p>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" noValidate>
             {/* Input Email */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-gray-400">Email Address</label>
