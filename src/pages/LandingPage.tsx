@@ -85,23 +85,22 @@ export const LandingPage: React.FC = () => {
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [apiLoading, setApiLoading] = useState(false);
 
-  const handleApiRun = () => {
+  const handleApiRun = async () => {
     setApiLoading(true);
     setApiResponse(null);
-    setTimeout(() => {
-      let parsedBody = undefined;
-      try {
-        if (apiMethod !== 'GET') {
-          parsedBody = JSON.parse(apiPayload);
-        }
-        const res = triggerMockApi(apiMethod, apiEndpoint, parsedBody);
-        setApiResponse(res);
-      } catch (err: any) {
-        setApiResponse({ success: false, error: 'Invalid JSON payload format' });
-      } finally {
-        setApiLoading(false);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    let parsedBody = undefined;
+    try {
+      if (apiMethod !== 'GET') {
+        parsedBody = JSON.parse(apiPayload);
       }
-    }, 800);
+      const res = await triggerMockApi(apiMethod, apiEndpoint, parsedBody);
+      setApiResponse(res);
+    } catch (err: any) {
+      setApiResponse({ success: false, error: 'Invalid JSON payload format' });
+    } finally {
+      setApiLoading(false);
+    }
   };
 
   const setApiPreset = (method: 'POST' | 'GET' | 'PATCH', endpoint: string, payload: any) => {

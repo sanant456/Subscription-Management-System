@@ -28,8 +28,12 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 
   // Validate plan tier selection
-  const prices = { Basic: 1500, Pro: 4000, Enterprise: 25000 };
-  if (!Object.keys(prices).includes(plan)) {
+  const prices: Record<string, Record<string, number>> = {
+    Basic: { monthly: 1500, yearly: 15000 },
+    Pro: { monthly: 4000, yearly: 40000 },
+    Enterprise: { monthly: 25000, yearly: 250000 },
+  };
+  if (!prices[plan]) {
     return res.status(400).json({ success: false, error: `Invalid plan tier selection. Supported tiers: ${Object.keys(prices).join(', ')}` });
   }
 
@@ -43,8 +47,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     return res.status(403).json({ success: false, error: 'Forbidden. You can only create subscriptions for your authenticated email address.' });
   }
 
-  const basePrice = prices[plan as 'Basic' | 'Pro' | 'Enterprise'];
-  const amount = interval === 'yearly' ? basePrice * 10 : basePrice;
+  const amount = prices[plan][interval];
   const billingDays = interval === 'yearly' ? 365 : 30;
 
   try {

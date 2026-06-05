@@ -95,25 +95,8 @@ export const Dashboard: React.FC = () => {
     keyId?: string;
   } | null>(null);
 
-  // Helper to load Razorpay Script
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if ('Razorpay' in window) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   useEffect(() => {
-    const socketUrl = window.location.origin.replace(/^http/, 'ws');
-    const socket = io(socketUrl, {
-      path: '/api/socket.io',
+    const socket = io({
       autoConnect: true,
       reconnection: true,
     });

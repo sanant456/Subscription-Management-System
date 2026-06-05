@@ -95,7 +95,7 @@ app.get('/', (req, res) => {
 
 // Broadcast export function
 export const broadcastMessage = (message: string) => {
-  io.emit('broadcast', message);
+  io.emit('broadcast', { message });
 };
 
 // WebSocket Event Listeners
