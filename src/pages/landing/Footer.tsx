@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-8 text-xs font-semibold text-gray-400">
+        <div className="flex flex-wrap justify-center items-center gap-8 text-xs font-semibold text-gray-400">
           <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-purple-400 flex items-center gap-1.5">
             <Github className="h-4 w-4" /> GitHub
           </a>
