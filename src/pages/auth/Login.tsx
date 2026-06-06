@@ -36,6 +36,18 @@ export const Login: React.FC = () => {
     setLoading(false);
 
     if (success) {
+      const pending = localStorage.getItem('pending_checkout_selection');
+      if (pending) {
+        try {
+          const { plan, interval } = JSON.parse(pending);
+          if (plan && interval) {
+            navigate(`/checkout?plan=${plan}&interval=${interval}`);
+            return;
+          }
+        } catch (e) {
+          console.warn("Failed to parse pending checkout", e);
+        }
+      }
       navigate('/dashboard');
     }
   };
@@ -45,6 +57,18 @@ export const Login: React.FC = () => {
     const success = await loginWithOAuth(provider);
     setLoading(false);
     if (success) {
+      const pending = localStorage.getItem('pending_checkout_selection');
+      if (pending) {
+        try {
+          const { plan, interval } = JSON.parse(pending);
+          if (plan && interval) {
+            navigate(`/checkout?plan=${plan}&interval=${interval}`);
+            return;
+          }
+        } catch (e) {
+          console.warn("Failed to parse pending checkout", e);
+        }
+      }
       navigate('/dashboard');
     }
   };
