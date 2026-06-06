@@ -15,6 +15,7 @@ import { DashboardSidebar } from './dashboard/DashboardSidebar';
 import { OverviewTab } from './dashboard/OverviewTab';
 import { SubscriptionsTab } from './dashboard/SubscriptionsTab';
 import { BillingTab } from './dashboard/BillingTab';
+import { PaymentsTab } from './dashboard/PaymentsTab';
 import { ApiPlaygroundTab } from './dashboard/ApiPlaygroundTab';
 import { MonitorsTab } from './dashboard/MonitorsTab';
 import { ProrateModal } from './dashboard/ProrateModal';
@@ -42,7 +43,7 @@ export const Dashboard: React.FC = () => {
     fetchReceipt,
   } = useSubscription();
 
-  const [currentTab, setCurrentTab] = useState<'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors' | 'admin'>('overview');
+  const [currentTab, setCurrentTab] = useState<'overview' | 'subscriptions' | 'billing' | 'payments' | 'api' | 'monitors' | 'admin'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // WebSocket Live Alert State
@@ -422,9 +423,16 @@ export const Dashboard: React.FC = () => {
             {currentTab === 'billing' && (
               <BillingTab 
                 invoices={invoices}
-                payments={payments}
                 user={user}
                 retryPayment={retryPayment}
+                addLog={addLog}
+              />
+            )}
+
+            {currentTab === 'payments' && (
+              <PaymentsTab 
+                payments={payments}
+                user={user}
                 addLog={addLog}
                 fetchReceipt={fetchReceipt}
               />

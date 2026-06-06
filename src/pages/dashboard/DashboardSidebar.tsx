@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, FileText, Terminal, Activity, 
-  X, ArrowLeft, ShieldAlert
+  X, ArrowLeft, ShieldAlert, CreditCard
 } from 'lucide-react';
 
 interface DashboardSidebarProps {
@@ -70,6 +70,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left cursor-pointer ${currentTab === 'billing' ? 'bg-purple-600 text-white shadow-md shadow-purple-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
             <FileText className="h-4.5 w-4.5" /> Billing & Invoices
+          </button>
+
+          <button
+            onClick={() => { setCurrentTab('payments'); setSidebarOpen(false); }}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left cursor-pointer ${currentTab === 'payments' ? 'bg-purple-600 text-white shadow-md shadow-purple-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <CreditCard className="h-4.5 w-4.5" /> Payments & Receipts
           </button>
 
           <button
