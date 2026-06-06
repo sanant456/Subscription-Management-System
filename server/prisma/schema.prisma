@@ -24,6 +24,7 @@ model User {
   createdAt            DateTime       @default(now())
   subscriptions        Subscription[]
   invoices             Invoice[]
+  payments             Payment[]
 }
 
 model Subscription {
@@ -42,6 +43,21 @@ model Subscription {
   invoices        Invoice[]
 }
 
+model Payment {
+  id                String       @id
+  userId            String
+  subscriptionId    String
+  razorpayOrderId   String
+  razorpayPaymentId String
+  amount            Float
+  currency          String       @default("INR")
+  status            String
+  paymentDate       DateTime     @default(now())
+  
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
+}
+
 model Invoice {
   id             String       @id
   subscriptionId String
@@ -52,6 +68,11 @@ model Invoice {
   status         String
   createdAt      DateTime     @default(now())
   
+  paymentId      String?
+  invoiceNumber  String?
+  generatedAt    DateTime     @default(now())
+  
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  payment        Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 }

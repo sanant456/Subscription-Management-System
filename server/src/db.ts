@@ -9,7 +9,8 @@ const STORAGE_FILE = path.join(__dirname, 'db_fallback.json');
 let localStore = {
   users: [] as any[],
   subscriptions: [] as any[],
-  invoices: [] as any[]
+  invoices: [] as any[],
+  payments: [] as any[]
 };
 
 // Seed administrative user
@@ -52,6 +53,19 @@ const seedLocalStore = () => {
       nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     }
   ];
+  localStore.payments = [
+    {
+      id: 'pay_b8d38e21',
+      userId: 'usr_81923',
+      subscriptionId: 'sub_b8d38e21',
+      razorpayOrderId: 'order_b8d38e21_id',
+      razorpayPaymentId: 'pay_b8d38e21_id',
+      amount: 49,
+      currency: 'INR',
+      status: 'SUCCESS',
+      paymentDate: new Date()
+    }
+  ];
   localStore.invoices = [
     {
       id: 'inv_b8d38e21',
@@ -61,7 +75,10 @@ const seedLocalStore = () => {
       plan: 'Pro',
       amount: 49,
       status: 'Paid',
-      createdAt: new Date()
+      createdAt: new Date(),
+      paymentId: 'pay_b8d38e21',
+      invoiceNumber: 'INV-2026-81923',
+      generatedAt: new Date()
     }
   ];
   saveLocalStore();
@@ -78,6 +95,10 @@ const loadLocalStore = () => {
     }
   } else {
     seedLocalStore();
+  }
+
+  if (!localStore.payments) {
+    localStore.payments = [];
   }
 
   // Ensure admin@saascorp.com is present in localStore.users
@@ -215,10 +236,55 @@ export const db = {
     },
     create: async (args: { data: any }) => {
       if (!useFallback && prisma) return prisma.invoice.create(args);
-      const newInvoice = { id: `inv_${Math.random().toString(36).substring(2, 9)}`, createdAt: new Date(), ...args.data };
+      const newInvoice = { 
+        id: `inv_${Math.random().toString(36).substring(2, 9)}`, 
+        createdAt: new Date(), 
+        generatedAt: new Date(),
+        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
+        ...args.data 
+      };
       localStore.invoices.push(newInvoice);
       saveLocalStore();
       return newInvoice;
+    }
+  },
+
+  payment: {
+    findMany: async (args?: { where?: { userId?: string } }) => {
+      if (!useFallback && prisma) return prisma.payment.findMany(args);
+      if (args?.where?.userId) {
+        return (localStore.payments || []).filter(p => p.userId === args.where?.userId);
+      }
+      return localStore.payments || [];
+    },
+    findUnique: async (args: { where: { id: string } }) => {
+      if (!useFallback && prisma) return prisma.payment.findUnique(args);
+      return (localStore.payments || []).find(p => p.id === args.where.id) || null;
+    },
+    findFirst: async (args: { where: { razorpayOrderId: string } }) => {
+      if (!useFallback && prisma) return prisma.payment.findFirst(args);
+      return (localStore.payments || []).find(p => p.razorpayOrderId === args.where.razorpayOrderId) || null;
+    },
+    create: async (args: { data: any }) => {
+      if (!useFallback && prisma) return prisma.payment.create(args);
+      const newPayment = {
+        id: `pay_${Math.random().toString(36).substring(2, 9)}`,
+        paymentDate: new Date(),
+        currency: 'INR',
+        ...args.data
+      };
+      if (!localStore.payments) localStore.payments = [];
+      localStore.payments.push(newPayment);
+      saveLocalStore();
+      return newPayment;
+    },
+    update: async (args: { where: { id: string }, data: any }) => {
+      if (!useFallback && prisma) return prisma.payment.update(args);
+      const idx = (localStore.payments || []).findIndex(p => p.id === args.where.id);
+      if (idx === -1) throw new Error('Payment not found');
+      localStore.payments[idx] = { ...localStore.payments[idx], ...args.data };
+      saveLocalStore();
+      return localStore.payments[idx];
     }
   }
 };

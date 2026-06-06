@@ -29,6 +29,23 @@ export interface Invoice {
   amount: number;
   status: 'Paid' | 'Unpaid' | 'Failed';
   createdAt: string;
+  paymentId?: string;
+  invoiceNumber?: string;
+  generatedAt?: string;
+}
+
+export interface Payment {
+  id: string;
+  userId: string;
+  userEmail: string;
+  subscriptionId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  amount: number;
+  currency: string;
+  status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'Success' | 'Failed' | 'Pending';
+  paymentDate: string;
+  plan?: string;
 }
 
 export interface SystemLog {
@@ -51,10 +68,11 @@ interface SubscriptionContextType {
   toggleTheme: () => void;
   activePage: 'landing' | 'dashboard';
   setActivePage: (page: 'landing' | 'dashboard') => void;
-  dashboardTab: 'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors';
-  setDashboardTab: (tab: 'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors') => void;
+  dashboardTab: 'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors' | 'admin';
+  setDashboardTab: (tab: 'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors' | 'admin') => void;
   subscriptions: Subscription[];
   invoices: Invoice[];
+  payments: Payment[];
   systemLogs: SystemLog[];
   metrics: SubscriptionMetrics;
   createSubscription: (email: string, plan: PlanType, interval: BillingInterval) => Subscription;
@@ -65,6 +83,7 @@ interface SubscriptionContextType {
   clearLogs: () => void;
   addLog: (service: SystemLog['service'], message: string, type?: SystemLog['type']) => void;
   triggerMockApi: (method: string, endpoint: string, body?: any) => Promise<{ success: boolean; data?: any; error?: string }>;
+  fetchReceipt: (paymentId: string) => Promise<any>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -158,7 +177,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { token, user } = useAuth();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [activePage, setActivePage] = useState<'landing' | 'dashboard'>('landing');
-  const [dashboardTab, setDashboardTab] = useState<'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors'>('overview');
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors' | 'admin'>('overview');
   
   // ── localStorage version-busting: clears stale cache when dataset changes ──
   const DATA_VERSION = 'subvault_v3_kaggle';
@@ -190,9 +209,29 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   });
 
+  const initialPayments: Payment[] = [
+    { id: 'pay_rzp_001', userId: 'usr_e1001', userEmail: 'cto@razorpay-saas.in', subscriptionId: 'sub_ent_001', razorpayOrderId: 'order_rzp_001', razorpayPaymentId: 'pay_rzp_001_id', amount: 25000, currency: 'INR', status: 'SUCCESS', paymentDate: '2026-05-10', plan: 'Enterprise' },
+    { id: 'pay_rzp_002', userId: 'usr_e1001', userEmail: 'cto@razorpay-saas.in', subscriptionId: 'sub_ent_001', razorpayOrderId: 'order_rzp_002', razorpayPaymentId: 'pay_rzp_002_id', amount: 25000, currency: 'INR', status: 'SUCCESS', paymentDate: '2026-04-10', plan: 'Enterprise' },
+    { id: 'pay_rzp_003', userId: 'usr_e1002', userEmail: 'billing@freshworks-saas.com', subscriptionId: 'sub_ent_002', razorpayOrderId: 'order_rzp_003', razorpayPaymentId: 'pay_rzp_003_id', amount: 250000, currency: 'INR', status: 'SUCCESS', paymentDate: '2025-12-01', plan: 'Enterprise' },
+    { id: 'pay_rzp_004', userId: 'usr_e1003', userEmail: 'ops@zoho-saas.com', subscriptionId: 'sub_ent_003', razorpayOrderId: 'order_rzp_004', razorpayPaymentId: 'pay_rzp_004_id', amount: 25000, currency: 'INR', status: 'SUCCESS', paymentDate: '2026-05-15', plan: 'Enterprise' },
+    { id: 'pay_rzp_005', userId: 'usr_e1004', userEmail: 'finance@chargebee-saas.com', subscriptionId: 'sub_ent_004', razorpayOrderId: 'order_rzp_005', razorpayPaymentId: 'pay_rzp_005_id', amount: 250000, currency: 'INR', status: 'SUCCESS', paymentDate: '2025-11-20', plan: 'Enterprise' },
+    { id: 'pay_rzp_006', userId: 'usr_p2001', userEmail: 'engineering@meesho-s.com', subscriptionId: 'sub_pro_001', razorpayOrderId: 'order_rzp_006', razorpayPaymentId: 'pay_rzp_006_id', amount: 4000, currency: 'INR', status: 'SUCCESS', paymentDate: '2026-05-22', plan: 'Pro' },
+    { id: 'pay_rzp_007', userId: 'usr_p2007', userEmail: 'tech@sprinklr-saas.com', subscriptionId: 'sub_pro_007', razorpayOrderId: 'order_rzp_007', razorpayPaymentId: 'pay_rzp_007_id', amount: 4000, currency: 'INR', status: 'FAILED', paymentDate: '2026-05-18', plan: 'Pro' }
+  ];
+
+  const [payments, setPayments] = useState<Payment[]>(() => {
+    try {
+      const saved = localStorage.getItem('subvault_payments_db');
+      return saved ? JSON.parse(saved) : initialPayments;
+    } catch (e) {
+      console.warn("Failed to parse payments from localStorage, resetting...", e);
+      return initialPayments;
+    }
+  });
+
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>(initialLogs);
 
-  // Filter subscriptions and invoices based on logged-in user role
+  // Filter subscriptions, invoices, and payments based on logged-in user role
   const filteredSubscriptions = React.useMemo(() => {
     if (!user) return [];
     if (user.role === 'ADMIN') return subscriptions;
@@ -205,6 +244,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return invoices.filter(i => i.userEmail.toLowerCase() === user.email.toLowerCase());
   }, [invoices, user]);
 
+  const filteredPayments = React.useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'ADMIN') return payments;
+    return payments.filter(p => p.userEmail.toLowerCase() === user.email.toLowerCase());
+  }, [payments, user]);
+
   // Save to localStorage
   useEffect(() => {
     localStorage.setItem('subvault_sub_db', JSON.stringify(subscriptions));
@@ -213,6 +258,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     localStorage.setItem('subvault_invoices_db', JSON.stringify(invoices));
   }, [invoices]);
+
+  useEffect(() => {
+    localStorage.setItem('subvault_payments_db', JSON.stringify(payments));
+  }, [payments]);
 
   // Load from backend API if a real token is available
   useEffect(() => {
@@ -235,6 +284,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           setInvoices(invRes.invoices);
           addLog('PostgreSQL', `Successfully loaded ${invRes.invoices.length} historical invoices from DB.`, 'success');
         }
+
+        const paymentsUrl = user?.role === 'ADMIN' ? '/api/admin/payments' : '/api/payments/history';
+        const payRes = await fetch(paymentsUrl, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json());
+        if (payRes.success) {
+          setPayments(payRes.payments);
+          addLog('PostgreSQL', `Successfully loaded ${payRes.payments.length} transaction records from DB.`, 'success');
+        }
       } catch (e) {
         addLog('API Gateway', 'Connection to database server timed out. Running in mock offline mode.', 'warn');
         console.warn("Could not retrieve real database billing records. Using localStorage cache.", e);
@@ -242,7 +300,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     fetchBillingData();
-  }, [token]);
+  }, [token, user]);
 
   // Recalculate KPIs based on subscriptions
   const metrics = React.useMemo<SubscriptionMetrics>(() => {
@@ -426,16 +484,36 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setSubscriptions(prev => [newSub, ...prev]);
 
     // Create Invoice
+    const invoiceId = `inv_${Math.floor(80000 + Math.random() * 19000)}`;
     const newInvoice: Invoice = {
-      id: `inv_${Math.floor(80000 + Math.random() * 19000)}`,
+      id: invoiceId,
       subscriptionId: subId,
       userEmail: email,
       plan,
       amount,
       status: 'Paid',
       createdAt,
+      invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
+      generatedAt: new Date().toISOString()
     };
     setInvoices(prev => [newInvoice, ...prev]);
+
+    // Create Payment record
+    const paymentId = `pay_${Math.random().toString(36).substring(2, 10)}`;
+    const newPayment: Payment = {
+      id: paymentId,
+      userId,
+      userEmail: email,
+      subscriptionId: subId,
+      razorpayOrderId: `order_mock_${Math.random().toString(36).substring(2, 10)}`,
+      razorpayPaymentId: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
+      amount: amount + Math.round(amount * 0.18),
+      currency: 'INR',
+      status: 'SUCCESS',
+      paymentDate: new Date().toISOString(),
+      plan
+    };
+    setPayments(prev => [newPayment, ...prev]);
 
     // Sync to Express Backend
     if (token && !token.startsWith('mock_')) {
@@ -527,9 +605,29 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         amount,
         status: 'Paid' as const,
         createdAt: new Date().toISOString().split('T')[0],
+        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
+        generatedAt: new Date().toISOString()
       };
       return [newInvoice, ...prev];
     });
+
+    // Create Payment record for upgrade
+    const parentEmail = subscriptions.find(s => s.id === id)?.userEmail || 'unknown@company.com';
+    const payId = `pay_${Math.random().toString(36).substring(2, 10)}`;
+    const newPayment: Payment = {
+      id: payId,
+      userId: subscriptions.find(s => s.id === id)?.userId || 'unknown',
+      userEmail: parentEmail,
+      subscriptionId: id,
+      razorpayOrderId: `order_mock_${Math.random().toString(36).substring(2, 10)}`,
+      razorpayPaymentId: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
+      amount,
+      currency: 'INR',
+      status: 'SUCCESS',
+      paymentDate: new Date().toISOString(),
+      plan
+    };
+    setPayments(prev => [newPayment, ...prev]);
 
     // Sync to Express Backend
     if (token && !token.startsWith('mock_')) {
@@ -631,6 +729,39 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     addLog('Redis', `Evicted cache keys matching subscription id ${id}.`, 'success');
   };
 
+  const fetchReceipt = async (paymentId: string) => {
+    if (token && !token.startsWith('mock_')) {
+      try {
+        const res = await fetch(`/api/payments/${paymentId}/receipt`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json());
+        if (res.success) return res.receipt;
+      } catch (e) {
+        console.error("Failed to fetch receipt from API", e);
+      }
+    }
+    
+    // local mockup fallback
+    const localPay = payments.find(p => p.id === paymentId);
+    if (localPay) {
+      return {
+        receiptNumber: `REC-${localPay.id.toUpperCase()}`,
+        paymentId: localPay.id,
+        transactionId: localPay.razorpayPaymentId || 'N/A',
+        orderId: localPay.razorpayOrderId,
+        amountPaid: localPay.amount,
+        currency: localPay.currency,
+        status: localPay.status,
+        date: localPay.paymentDate,
+        company: 'SubVault SaaS Corp',
+        address: 'Outer Ring Road, Bengaluru, India',
+        gstin: '29AAAAA1111A1Z1',
+        supportEmail: 'billing@subvault.co'
+      };
+    }
+    return null;
+  };
+
   return (
     <SubscriptionContext.Provider
       value={{
@@ -642,6 +773,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setDashboardTab,
         subscriptions: filteredSubscriptions,
         invoices: filteredInvoices,
+        payments: filteredPayments,
         systemLogs,
         metrics,
         createSubscription,
@@ -652,6 +784,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         clearLogs,
         addLog,
         triggerMockApi,
+        fetchReceipt,
       }}
     >
       {children}

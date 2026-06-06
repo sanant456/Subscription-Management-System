@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, ShieldAlert, Radio, Cpu, RefreshCw, CheckCircle, 
-  ShieldCheck, Calendar, Activity, Database
+  ShieldCheck, Calendar, Activity, Database, CreditCard,
+  DollarSign, Percent, Search, Filter, ArrowUpRight, ArrowDownRight, Clock
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -32,9 +33,14 @@ interface RefundRequest {
 }
 
 export const AdminPanel: React.FC = () => {
-  const { triggerMockApi } = useSubscription();
-  const [activeTab, setActiveTab] = useState<'users' | 'refunds' | 'broadcast' | 'health'>('users');
+  const { triggerMockApi, payments } = useSubscription();
+  const [activeTab, setActiveTab] = useState<'users' | 'refunds' | 'broadcast' | 'health' | 'transactions'>('users');
   
+  // Search and Filter States for Transactions
+  const [searchEmail, setSearchEmail] = useState('');
+  const [filterPlan, setFilterPlan] = useState<'All' | 'Basic' | 'Pro' | 'Enterprise'>('All');
+  const [filterStatus, setFilterStatus] = useState<'All' | 'SUCCESS' | 'FAILED' | 'PENDING'>('All');
+
   // States
   const [users, setUsers] = useState<AdminUser[]>([
     { id: 'usr_1', name: 'Sarah Jenkins', email: 'sarah@saasflow.com', role: 'ADMIN', plan: 'Enterprise', status: 'Active', createdAt: '2026-01-15' },
@@ -130,6 +136,66 @@ export const AdminPanel: React.FC = () => {
     setBroadcastMsg('');
   };
 
+  // Transaction tab metrics and chart computations
+  const totalRevenue = React.useMemo(() => {
+    return payments
+      .filter(p => ['SUCCESS', 'Success'].includes(p.status))
+      .reduce((sum, p) => sum + p.amount, 0);
+  }, [payments]);
+
+  const successRate = React.useMemo(() => {
+    if (payments.length === 0) return 100;
+    const successCount = payments.filter(p => ['SUCCESS', 'Success'].includes(p.status)).length;
+    return Math.round((successCount / payments.length) * 100);
+  }, [payments]);
+
+  const totalTransactionsCount = payments.length;
+
+  const revenueChartData = React.useMemo(() => {
+    const successfulPayments = payments.filter(p => ['SUCCESS', 'Success'].includes(p.status));
+    
+    // Setup initial dictionary to guarantee correct chronological order of standard dashboard months
+    const monthlyRev: Record<string, number> = {
+      'Jan': 0, 'Feb': 0, 'Mar': 0, 'Apr': 0, 'May': 0, 'Jun': 0
+    };
+
+    successfulPayments.forEach(p => {
+      try {
+        const date = new Date(p.paymentDate);
+        const monthName = date.toLocaleString('en-US', { month: 'short' });
+        if (monthName in monthlyRev) {
+          monthlyRev[monthName] += p.amount;
+        } else {
+          monthlyRev[monthName] = p.amount;
+        }
+      } catch (e) {
+        // ignore invalid dates
+      }
+    });
+
+    const monthsOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return monthsOrder
+      .filter(m => m in monthlyRev || monthlyRev[m] > 0)
+      .map(m => ({
+        month: m,
+        Revenue: monthlyRev[m] || 0
+      }));
+  }, [payments]);
+
+  // Filtering payments based on search and filters
+  const filteredPayments = React.useMemo(() => {
+    return payments.filter(p => {
+      const matchEmail = searchEmail.trim() === '' || p.userEmail.toLowerCase().includes(searchEmail.toLowerCase());
+      const matchPlan = filterPlan === 'All' || p.plan === filterPlan;
+      
+      const normalizedStatus = ['SUCCESS', 'Success'].includes(p.status) ? 'SUCCESS' :
+                               ['FAILED', 'Failed'].includes(p.status) ? 'FAILED' : 'PENDING';
+      const matchStatus = filterStatus === 'All' || normalizedStatus === filterStatus;
+      
+      return matchEmail && matchPlan && matchStatus;
+    });
+  }, [payments, searchEmail, filterPlan, filterStatus]);
+
   return (
     <div className="space-y-6">
       {/* Admin header */}
@@ -155,7 +221,7 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/5 gap-1.5 pb-px">
+      <div className="flex flex-wrap border-b border-white/5 gap-1.5 pb-px">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
@@ -164,6 +230,17 @@ export const AdminPanel: React.FC = () => {
         >
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4" /> Users Database ({users.length})
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('transactions')}
+          className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+            activeTab === 'transactions' ? 'border-purple-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" /> Transactions ({payments.length})
           </div>
         </button>
 
@@ -256,6 +333,207 @@ export const AdminPanel: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'transactions' && (
+          <motion.div
+            key="transactions"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            {/* KPI Metrics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-white/5 bg-black/10 p-4">
+                <CardContent className="p-0 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider font-heading">Total Revenue</span>
+                    <div className="text-xl font-extrabold text-white font-mono mt-1">
+                      ₹{totalRevenue.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/5 bg-black/10 p-4">
+                <CardContent className="p-0 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider font-heading">Gateway Success Rate</span>
+                    <div className="text-xl font-extrabold text-emerald-400 font-mono mt-1">
+                      {successRate}%
+                    </div>
+                  </div>
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-400">
+                    <Percent className="h-5 w-5" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/5 bg-black/10 p-4">
+                <CardContent className="p-0 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider font-heading">Total Transactions</span>
+                    <div className="text-xl font-extrabold text-white font-mono mt-1">
+                      {totalTransactionsCount}
+                    </div>
+                  </div>
+                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/5 bg-black/10 p-4">
+                <CardContent className="p-0 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider font-heading">Filtered Count</span>
+                    <div className="text-xl font-extrabold text-cyan-400 font-mono mt-1">
+                      {filteredPayments.length}
+                    </div>
+                  </div>
+                  <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 text-cyan-400">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Growth Curve Chart */}
+            <Card className="border-white/5 bg-black/15">
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold text-white">Razorpay Revenue Performance</CardTitle>
+                <CardDescription className="text-xs">Accumulated successfully processed subscription order volume by month</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={revenueChartData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                      <XAxis dataKey="month" stroke="rgba(255,255,255,0.2)" style={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <YAxis stroke="rgba(255,255,255,0.2)" style={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <Tooltip formatter={(value) => [`₹${Number(value).toLocaleString()}`, 'Revenue']} contentStyle={{ background: '#08081a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 10 }} />
+                      <Area type="monotone" name="Revenue" dataKey="Revenue" stroke="#8b5cf6" strokeWidth={1.5} fillOpacity={1} fill="url(#colorRev)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Filter Section */}
+            <Card className="border-white/5 bg-black/10 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-gray-400 font-bold uppercase flex items-center gap-1.5">
+                    <Search className="h-3 w-3" /> Search Customer Email
+                  </label>
+                  <input
+                    type="text"
+                    value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                    placeholder="e.g. razorpay-saas.in"
+                    className="w-full px-3 py-2 text-xs text-white bg-black/40 border border-white/5 focus:border-purple-500/50 rounded-xl focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-gray-400 font-bold uppercase flex items-center gap-1.5">
+                    <Filter className="h-3 w-3" /> Plan Filter
+                  </label>
+                  <select
+                    value={filterPlan}
+                    onChange={(e) => setFilterPlan(e.target.value as any)}
+                    className="w-full px-3 py-2 text-xs text-white bg-black/60 border border-white/5 focus:border-purple-500/50 rounded-xl focus:outline-none cursor-pointer"
+                  >
+                    <option value="All">All Plans</option>
+                    <option value="Basic">Basic Plan</option>
+                    <option value="Pro">Pro Plan</option>
+                    <option value="Enterprise">Enterprise Plan</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-gray-400 font-bold uppercase flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" /> Gateway Status
+                  </label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 text-xs text-white bg-black/60 border border-white/5 focus:border-purple-500/50 rounded-xl focus:outline-none cursor-pointer"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="SUCCESS">SUCCESS</option>
+                    <option value="FAILED">FAILED</option>
+                    <option value="PENDING">PENDING</option>
+                  </select>
+                </div>
+              </div>
+            </Card>
+
+            {/* Transactions Table */}
+            <div className="glass-panel border-white/5 rounded-2xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-black/20 text-gray-400 font-bold uppercase tracking-wider">
+                      <th className="p-4">Payment ID</th>
+                      <th className="p-4">Customer Email</th>
+                      <th className="p-4">Plan</th>
+                      <th className="p-4">Amount</th>
+                      <th className="p-4">Gateway Reference</th>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 font-medium">
+                    {filteredPayments.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-gray-500 font-mono">
+                          // No matching transaction logs found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPayments.map((pay) => (
+                        <tr key={pay.id} className="hover:bg-white/5 transition-all">
+                          <td className="p-4 font-mono text-gray-400">{pay.id}</td>
+                          <td className="p-4 text-white">{pay.userEmail}</td>
+                          <td className="p-4">
+                            <span className="font-semibold text-purple-400">{pay.plan || 'N/A'}</span>
+                          </td>
+                          <td className="p-4 font-bold text-white">₹{pay.amount.toLocaleString()}</td>
+                          <td className="p-4 font-mono text-[10px] text-gray-500">
+                            <div>Ord: {pay.razorpayOrderId}</div>
+                            <div>Pay: {pay.razorpayPaymentId || 'N/A'}</div>
+                          </td>
+                          <td className="p-4 text-gray-400 font-mono">
+                            {new Date(pay.paymentDate).toLocaleString()}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${
+                              ['SUCCESS', 'Success'].includes(pay.status) ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                              ['FAILED', 'Failed'].includes(pay.status) ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                              'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            }`}>
+                              {pay.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </motion.div>
         )}

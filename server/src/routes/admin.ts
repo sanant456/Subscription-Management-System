@@ -111,4 +111,114 @@ router.post('/broadcast', authenticateToken, requireAdmin, (req: AuthRequest, re
   res.json({ success: true, message: `System wide broadcast dispatched: "${message}"` });
 });
 
+// List all transactions (Payments) across the platform with filtering
+router.get('/payments', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const list = await db.payment.findMany();
+    
+    // In-memory searching & filtering to support both database fallbacks
+    const { email, plan, status } = req.query;
+    
+    let filtered = [...list];
+    
+    // Sort descending by date
+    filtered.sort((a: any, b: any) => {
+      const dateA = new Date(a.paymentDate).getTime();
+      const dateB = new Date(b.paymentDate).getTime();
+      return dateB - dateA;
+    });
+
+    const users = await db.user.findMany();
+    const userMap = new Map(users.map((u: any) => [u.id, u.email.toLowerCase()]));
+    const subs = await db.subscription.findMany();
+    const subMap = new Map(subs.map((s: any) => [s.id, s.plan]));
+
+    if (email) {
+      const emailLower = (email as string).toLowerCase();
+      filtered = filtered.filter(p => {
+        const uEmail = userMap.get(p.userId) || '';
+        return uEmail.includes(emailLower);
+      });
+    }
+
+    if (plan) {
+      filtered = filtered.filter(p => {
+        const pPlan = subMap.get(p.subscriptionId) || '';
+        return pPlan.toLowerCase() === (plan as string).toLowerCase();
+      });
+    }
+
+    if (status) {
+      filtered = filtered.filter(p => p.status.toLowerCase() === (status as string).toLowerCase());
+    }
+
+    const mapped = filtered.map(p => ({
+      ...p,
+      userEmail: userMap.get(p.userId) || 'unknown@company.com',
+      plan: subMap.get(p.subscriptionId) || 'Pro'
+    }));
+
+    res.json({ success: true, payments: mapped });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generate revenue reports and analytics
+router.get('/revenue-report', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const payments = await db.payment.findMany();
+    const successfulPayments = payments.filter(p => p.status === 'SUCCESS' || p.status === 'Success');
+    
+    const subs = await db.subscription.findMany();
+    const subPlanMap = new Map(subs.map((s: any) => [s.id, s.plan]));
+    
+    let totalRevenue = 0;
+    let successCount = successfulPayments.length;
+    let failedCount = payments.filter(p => p.status === 'FAILED' || p.status === 'Failed').length;
+    let pendingCount = payments.filter(p => p.status === 'PENDING' || p.status === 'Pending').length;
+    
+    const planBreakdown = { Basic: 0, Pro: 0, Enterprise: 0 };
+    const monthlyRevenue: Record<string, number> = {};
+
+    successfulPayments.forEach(p => {
+      totalRevenue += p.amount;
+      
+      const plan = subPlanMap.get(p.subscriptionId) || 'Pro';
+      if (plan in planBreakdown) {
+        planBreakdown[plan as keyof typeof planBreakdown]++;
+      }
+
+      // Group by month
+      const date = new Date(p.paymentDate);
+      const monthName = date.toLocaleString('en-US', { month: 'short' });
+      monthlyRevenue[monthName] = (monthlyRevenue[monthName] || 0) + p.amount;
+    });
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    const activeMonths = months.slice(0, currentMonth + 1);
+    
+    const growthChart = activeMonths.map(m => ({
+      month: m,
+      revenue: monthlyRevenue[m] || 0
+    }));
+
+    res.json({
+      success: true,
+      report: {
+        totalRevenue,
+        successCount,
+        failedCount,
+        pendingCount,
+        successRate: payments.length > 0 ? Math.round((successCount / payments.length) * 100) : 100,
+        planBreakdown,
+        growthChart
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

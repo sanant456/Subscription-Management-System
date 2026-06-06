@@ -29,6 +29,7 @@ export const Dashboard: React.FC = () => {
     setActivePage,
     subscriptions,
     invoices,
+    payments,
     systemLogs,
     metrics,
     createSubscription,
@@ -38,6 +39,7 @@ export const Dashboard: React.FC = () => {
     deleteSubscription,
     clearLogs,
     addLog,
+    fetchReceipt,
   } = useSubscription();
 
   const [currentTab, setCurrentTab] = useState<'overview' | 'subscriptions' | 'billing' | 'api' | 'monitors' | 'admin'>('overview');
@@ -420,9 +422,11 @@ export const Dashboard: React.FC = () => {
             {currentTab === 'billing' && (
               <BillingTab 
                 invoices={invoices}
+                payments={payments}
                 user={user}
                 retryPayment={retryPayment}
                 addLog={addLog}
+                fetchReceipt={fetchReceipt}
               />
             )}
 

@@ -10,6 +10,7 @@ import adminRouter from './routes/admin';
 import stripeRouter from './routes/stripe';
 import razorpayRouter from './routes/razorpay';
 import qrRouter from './routes/qr';
+import paymentsRouter from './routes/payments';
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/stripe', stripeRouter);
 app.use('/api/razorpay', razorpayRouter);
 app.use('/api/qr', qrRouter);
+app.use('/api/payments', paymentsRouter);
 
 // ── Health Check Endpoint (for Docker / k8s readiness probes) ──────────────────
 app.get('/api/health', (_req, res) => {

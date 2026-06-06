@@ -228,4 +228,219 @@ router.post('/verify-subscription', authenticateToken, async (req: AuthRequest, 
   }
 });
 
+// Create order for single payment checkout
+router.post('/create-order', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized.' });
+  
+  const { plan, interval } = req.body;
+  if (!plan || !interval) {
+    return res.status(400).json({ success: false, error: 'Plan and interval are required.' });
+  }
+
+  const basePriceMap = prices[plan as 'Basic' | 'Pro' | 'Enterprise'];
+  if (!basePriceMap) {
+    return res.status(400).json({ success: false, error: 'Invalid plan selected.' });
+  }
+
+  const baseAmount = basePriceMap[interval as 'monthly' | 'yearly'];
+  if (!baseAmount) {
+    return res.status(400).json({ success: false, error: 'Invalid interval selected.' });
+  }
+
+  // Price calculation with GST (18%)
+  const gstAmount = Math.round(baseAmount * 0.18);
+  const totalAmount = baseAmount + gstAmount;
+
+  try {
+    const user = await db.user.findUnique({ where: { email: req.user.email } });
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User record not found.' });
+    }
+
+    let orderId = `order_mock_${Math.random().toString(36).substring(2, 10)}`;
+    let keyIdToReturn = 'rzp_test_placeholder';
+
+    if (!isMock && razorpay) {
+      try {
+        const order = await razorpay.orders.create({
+          amount: totalAmount * 100, // in paise
+          currency: 'INR',
+          receipt: `rcpt_${Math.random().toString(36).substring(2, 10)}`,
+          notes: {
+            userId: user.id,
+            userEmail: user.email,
+            plan,
+            interval,
+            baseAmount: baseAmount.toString()
+          }
+        });
+        orderId = order.id;
+        keyIdToReturn = keyId as string;
+      } catch (err: any) {
+        console.error('Razorpay Order creation error:', err);
+        return res.status(500).json({ success: false, error: `Order setup failed: ${err.message}` });
+      }
+    }
+
+    // Insert pending Payment transaction record in database
+    const paymentId = `pay_${Math.random().toString(36).substring(2, 10)}`;
+    await db.payment.create({
+      data: {
+        id: paymentId,
+        userId: user.id,
+        subscriptionId: `sub_pending_${Math.random().toString(36).substring(2, 10)}`, // temporary ID
+        razorpayOrderId: orderId,
+        razorpayPaymentId: '',
+        amount: totalAmount,
+        currency: 'INR',
+        status: 'PENDING',
+        paymentDate: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      mock: isMock,
+      keyId: keyIdToReturn,
+      orderId,
+      amount: totalAmount,
+      plan,
+      interval
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Verify signature and activate subscription
+router.post('/verify-payment', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized.' });
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, interval } = req.body;
+  
+  if (!razorpay_order_id || !plan || !interval) {
+    return res.status(400).json({ success: false, error: 'Missing required validation payloads.' });
+  }
+
+  try {
+    const user = await db.user.findUnique({ where: { email: req.user.email } });
+    if (!user) return res.status(404).json({ success: false, error: 'User record not found.' });
+
+    // Find the pending payment record in DB
+    const pendingPayment = await db.payment.findFirst({
+      where: { razorpayOrderId: razorpay_order_id }
+    });
+
+    const isMockTx = razorpay_order_id.startsWith('order_mock_') || isMock;
+    
+    if (!isMockTx && keySecret) {
+      if (!razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ success: false, error: 'Payment ID and signature are required for signature validation.' });
+      }
+      
+      const text = razorpay_order_id + '|' + razorpay_payment_id;
+      const generatedSignature = crypto
+        .createHmac('sha256', keySecret)
+        .update(text)
+        .digest('hex');
+
+      if (generatedSignature !== razorpay_signature) {
+        if (pendingPayment) {
+          await db.payment.update({
+            where: { id: pendingPayment.id },
+            data: { status: 'FAILED', razorpayPaymentId: razorpay_payment_id || 'verification_failed' }
+          });
+        }
+        return res.status(400).json({ success: false, error: 'Payment signature verification failed.' });
+      }
+    }
+
+    // Transaction is verified! Activate subscription.
+    const finalPaymentId = razorpay_payment_id || `pay_mock_rzp_${Math.random().toString(36).substring(2, 10)}`;
+    const finalSubId = `sub_${Math.random().toString(36).substring(2, 10)}`;
+    const basePriceMap = prices[plan as 'Basic' | 'Pro' | 'Enterprise'];
+    const baseAmount = basePriceMap[interval as 'monthly' | 'yearly'];
+
+    const billingDays = interval === 'yearly' ? 365 : 30;
+    const renewalDate = new Date(Date.now() + billingDays * 24 * 60 * 60 * 1000);
+
+    // 1. Update Payment record status
+    if (pendingPayment) {
+      await db.payment.update({
+        where: { id: pendingPayment.id },
+        data: { 
+          status: 'SUCCESS', 
+          razorpayPaymentId: finalPaymentId, 
+          subscriptionId: finalSubId 
+        }
+      });
+    } else {
+      // fallback create if not exists
+      await db.payment.create({
+        data: {
+          id: `pay_${Math.random().toString(36).substring(2, 10)}`,
+          userId: user.id,
+          subscriptionId: finalSubId,
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: finalPaymentId,
+          amount: baseAmount + Math.round(baseAmount * 0.18),
+          currency: 'INR',
+          status: 'SUCCESS',
+          paymentDate: new Date()
+        }
+      });
+    }
+
+    // 2. Activate user subscription in DB
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        stripeCustomerId: `cus_rzp_${Math.random().toString(36).substring(2, 10)}`,
+        stripeSubscriptionId: finalSubId,
+        subscriptionStatus: 'active'
+      }
+    });
+
+    // 3. Create Subscription record
+    const newSub = await db.subscription.create({
+      data: {
+        id: finalSubId,
+        userId: user.id,
+        userEmail: user.email,
+        plan,
+        status: 'Active',
+        amount: baseAmount,
+        interval,
+        nextBillingDate: renewalDate
+      }
+    });
+
+    // 4. Create corresponding Invoice record linked to Payment
+    const generatedInvoice = await db.invoice.create({
+      data: {
+        id: `inv_${Math.random().toString(36).substring(2, 10)}`,
+        subscriptionId: finalSubId,
+        userId: user.id,
+        userEmail: user.email,
+        plan,
+        amount: baseAmount + Math.round(baseAmount * 0.18),
+        status: 'Paid',
+        paymentId: pendingPayment ? pendingPayment.id : finalPaymentId,
+        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
+        generatedAt: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Payment verified and subscription activated.',
+      user: { ...user, subscriptionStatus: 'active' },
+      subscription: newSub,
+      invoice: generatedInvoice
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;
