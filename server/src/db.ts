@@ -130,11 +130,87 @@ loadLocalStore();
 let prisma: PrismaClient | null = null;
 let useFallback = true;
 
+const seedPostgresStore = async () => {
+  if (!prisma) return;
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log('🌱 Seeding PostgreSQL database with default data...');
+      
+      // 1. Create Users
+      await prisma.user.createMany({
+        data: [
+          {
+            id: 'usr_81923',
+            name: 'Sarah Jenkins',
+            email: 'sarah@saasflow.com',
+            password: '$2a$10$U.V1Z4j73j5N.qQ1S.t6A.d08B5o2C0t1y0eU8z8K1L4U4d4e4F4G',
+            role: 'ADMIN',
+            stripeCustomerId: 'cus_sarah_123',
+            stripeSubscriptionId: 'sub_b8d38e21',
+            subscriptionStatus: 'active',
+            createdAt: new Date()
+          },
+          {
+            id: 'usr_admin',
+            name: 'Root Admin',
+            email: 'admin@saascorp.com',
+            password: '$2a$10$MeVExSoIGSe7sIOz5ojBS.VCgRN6DICCFRafaq9529vzmiJBboR5W', // password
+            role: 'ADMIN',
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+            subscriptionStatus: 'inactive',
+            createdAt: new Date()
+          }
+        ]
+      });
+
+      // 2. Create Subscriptions
+      await prisma.subscription.create({
+        data: {
+          id: 'sub_b8d38e21',
+          userId: 'usr_81923',
+          userEmail: 'sarah@saasflow.com',
+          plan: 'Pro',
+          status: 'Active',
+          amount: 4000,
+          interval: 'monthly',
+          trialDaysLeft: null,
+          createdAt: new Date(),
+          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+      });
+
+      // 3. Create Invoices
+      await prisma.invoice.create({
+        data: {
+          id: 'inv_b8d38e21',
+          subscriptionId: 'sub_b8d38e21',
+          userId: 'usr_81923',
+          userEmail: 'sarah@saasflow.com',
+          plan: 'Pro',
+          amount: 4000,
+          status: 'Paid',
+          createdAt: new Date(),
+          invoiceNumber: 'INV-2026-81923',
+          generatedAt: new Date()
+        }
+      });
+
+      console.log('✅ PostgreSQL seeding completed.');
+    }
+  } catch (e) {
+    console.error('❌ Failed to seed PostgreSQL database:', e);
+  }
+};
+
 if (process.env.DATABASE_URL) {
   try {
     prisma = new PrismaClient();
     useFallback = false;
     console.log('🔌 Connected successfully to PostgreSQL via Prisma Client.');
+    // Run async seed
+    seedPostgresStore();
   } catch (e) {
     console.warn('⚠️ Prisma Client initialization failed. Falling back to JSON database.');
     useFallback = true;
