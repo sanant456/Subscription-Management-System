@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, Github, Chrome, Linkedin, AlertCircle, Sparkles } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Github, Chrome, Linkedin, AlertCircle, Sparkles, QrCode } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
+import { QRCodeSVG } from 'qrcode.react';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ export const Login: React.FC = () => {
 
   const { login, loginWithOAuth, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const [showUpiQr, setShowUpiQr] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,6 +174,33 @@ export const Login: React.FC = () => {
           <div className="mt-6 p-3.5 rounded-xl border border-purple-500/10 bg-purple-950/5 text-[11px] text-purple-300 font-semibold text-center leading-normal">
             💡 For Admin Console access, use: <br />
             <span className="font-mono text-cyan-300">admin@saascorp.com</span>
+          </div>
+
+          {/* Direct UPI Payment Quick Info */}
+          <div className="mt-4 p-3.5 rounded-xl border border-cyan-500/15 bg-cyan-950/10 text-[11px] text-cyan-300 font-semibold text-center leading-normal">
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="flex items-center gap-1"><QrCode className="h-3.5 w-3.5 text-cyan-400" /> Direct UPI QR Payee:</span>
+              <span className="font-mono text-cyan-400 font-bold select-all bg-black/40 px-2 py-0.5 rounded border border-cyan-500/10">9752146879@ptaxis</span>
+              <button
+                type="button"
+                onClick={() => setShowUpiQr(!showUpiQr)}
+                className="mt-1 px-3 py-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-[10px] text-cyan-200 transition-all font-bold cursor-pointer"
+              >
+                {showUpiQr ? 'Hide QR Code' : 'Scan & Pay QR'}
+              </button>
+            </div>
+            
+            {showUpiQr && (
+              <div className="mt-3 flex flex-col items-center justify-center p-2 bg-white rounded-lg shadow-lg border border-cyan-500/20 animate-fade-in mx-auto w-[116px] h-[116px]">
+                <QRCodeSVG
+                  value="upi://pay?pa=9752146879@ptaxis&pn=Ruby%20Singh&cu=INR&tn=SubVault%20Subscription"
+                  size={100}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                  level="L"
+                />
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
