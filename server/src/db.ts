@@ -25,6 +25,17 @@ const seedLocalStore = () => {
       stripeSubscriptionId: null,
       subscriptionStatus: 'inactive',
       createdAt: new Date()
+    },
+    {
+      id: 'usr_admin',
+      name: 'Root Admin',
+      email: 'admin@saascorp.com',
+      password: '$2a$10$MeVExSoIGSe7sIOz5ojBS.VCgRN6DICCFRafaq9529vzmiJBboR5W', // hashed "password"
+      role: 'ADMIN',
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      subscriptionStatus: 'inactive',
+      createdAt: new Date()
     }
   ];
   localStore.subscriptions = [
@@ -67,6 +78,24 @@ const loadLocalStore = () => {
     }
   } else {
     seedLocalStore();
+  }
+
+  // Ensure admin@saascorp.com is present in localStore.users
+  const adminEmail = 'admin@saascorp.com';
+  const hasAdmin = localStore.users.some(u => u.email.toLowerCase() === adminEmail);
+  if (!hasAdmin) {
+    localStore.users.push({
+      id: 'usr_admin',
+      name: 'Root Admin',
+      email: adminEmail,
+      password: '$2a$10$MeVExSoIGSe7sIOz5ojBS.VCgRN6DICCFRafaq9529vzmiJBboR5W', // hashed "password"
+      role: 'ADMIN',
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      subscriptionStatus: 'inactive',
+      createdAt: new Date()
+    });
+    saveLocalStore();
   }
 };
 

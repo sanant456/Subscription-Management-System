@@ -238,6 +238,17 @@
       "email": "pw_dash_1780420019869@example.com",
       "password": "$2a$10$YTkDtLYSA7s/61IS6634R.fyWZXFet8BieGC6gjTjGaO0VOWNiV3e",
       "role": "USER"
+    },
+    {
+      "id": "usr_admin",
+      "name": "Root Admin",
+      "email": "admin@saascorp.com",
+      "password": "$2a$10$MeVExSoIGSe7sIOz5ojBS.VCgRN6DICCFRafaq9529vzmiJBboR5W",
+      "role": "ADMIN",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "inactive",
+      "createdAt": "2026-06-06T05:05:49.423Z"
     }
   ],
   "subscriptions": [

@@ -171,14 +171,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, password }),
       }).catch(() => null);
 
-      if (response && response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setToken(data.token);
-        localStorage.setItem('subvault_auth_token', data.token);
-        localStorage.setItem('subvault_auth_user', JSON.stringify(data.user));
-        setIsLoading(false);
-        return true;
+      if (response) {
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          setToken(data.token);
+          localStorage.setItem('subvault_auth_token', data.token);
+          localStorage.setItem('subvault_auth_user', JSON.stringify(data.user));
+          setIsLoading(false);
+          return true;
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Invalid backend credentials.');
+        }
       }
 
       // Real Firebase Auth
@@ -273,14 +278,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ name, email, password }),
       }).catch(() => null);
 
-      if (response && response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setToken(data.token);
-        localStorage.setItem('subvault_auth_token', data.token);
-        localStorage.setItem('subvault_auth_user', JSON.stringify(data.user));
-        setIsLoading(false);
-        return true;
+      if (response) {
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          setToken(data.token);
+          localStorage.setItem('subvault_auth_token', data.token);
+          localStorage.setItem('subvault_auth_user', JSON.stringify(data.user));
+          setIsLoading(false);
+          return true;
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Account registration failed.');
+        }
       }
 
       // Real Firebase Auth
